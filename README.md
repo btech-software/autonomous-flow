@@ -178,4 +178,4 @@ In Claude Code, the idle poll can run as `/loop 10m <idle prompt>` (see PROMPTS.
 | `new-workspace.sh` | Creates a workspace and a remote-less clone |
 | `EXAMPLE_GENERIC.md` | A worked example: a developer's week running the flow |
 | `EXAMPLE_AGENT_LAB.md` | Building an Agent-Lab API with the flow: scaffold, offline workspace, BRIEF, task queue, landing |
-| `EXAMPLE_GAME_THREEJS.md` | A Three.js shooter with an Agent-Lab backend, polished by gauntlet loops: fan-out builders, blind critic panels, gates |
+| `EXAMPLE_GAME_THREEJS.md` | Counter-Attack, a Counter-Strike-influenced Three.js shooter with an Agent-Lab backend, polished by gauntlet loops: fan-out builders, blind critic panels, gates |

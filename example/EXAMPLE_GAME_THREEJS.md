@@ -1,11 +1,12 @@
 # Example: a AAA-grade Three.js shooter with gauntlet loops
 
-This walkthrough uses the autonomous flow to build **Emberline**, an original first-person shooter, from a
-blank folder to a polished vertical slice:
+This walkthrough uses the autonomous flow to build **Counter-Attack**, a round-based tactical first-person
+shooter, from a blank folder to a polished vertical slice. Counter-Attack is openly and heavily influenced by
+**Counter-Strike**. Anyone who has played Counter-Strike should feel at home within one round.
 
 - **Client:** Three.js in the browser.
-- **Server:** an [Agent-Lab](https://github.com/btech-software/agent-lab) backend that stores runs, serves the
-  leaderboard and runs an AI *director* that shapes each wave.
+- **Server:** an [Agent-Lab](https://github.com/btech-software/agent-lab) backend that stores matches, serves
+  the leaderboard and runs an AI *tactician* that calls the bot team's strategy each round.
 
 The visual and game-feel work is driven by a **gauntlet loop**:
 
@@ -19,9 +20,38 @@ This example builds on two others:
 
 - [EXAMPLE_AGENT_LAB.md](EXAMPLE_AGENT_LAB.md) for everything about the Agent-Lab server: scaffold, offline
   install, the K1 fix, and the patterns file.
-- The [README](README.md) for the flow itself.
+- The [README](../README.md) for the flow itself.
 
 This file adds the client, the gauntlet machinery and the game's task queue.
+
+## The game
+
+Counter-Attack takes Counter-Strike's core loop almost one for one:
+
+- **Two teams, five per side:** **Attackers** and **Defenders**. The player is on one team; bots fill
+  the other nine slots.
+- **Rounds, not respawns:** you die, you watch until the round ends. First team to 13 round wins takes
+  the match; sides swap at half time (after 12 rounds).
+- **The objective:** Attackers carry a **breach charge**, plant it on site A or site B, and protect it until
+  it detonates (40 s). Defenders stop the plant, or defuse it (10 s, 5 s with a kit). Eliminating the other
+  team also wins the round. Time-out with no plant is a Defender win.
+- **Buy phase and economy:** 15 s at the start of each round to buy weapons, armour, utility and kits from a
+  buy menu. Money comes from the round result (win bonus, rising loss bonus), kills (by weapon class) and
+  plants and defuses. Saving, eco rounds and force-buys matter.
+- **Gunplay you learn:**
+  - Hitscan weapons with fixed, learnable spray patterns.
+  - Accuracy tied to movement speed, so you stop to shoot (counter-strafing).
+  - Crouching tightens accuracy.
+  - A one-shot headshot rifle class and an expensive bolt-action sniper.
+- **Utility:** smoke, flash, fragmentation and incendiary grenades, bought per round.
+- **Map:** one competitive map, **Foundry**: a two-site bomb-defusal layout (A site, B site, mid, connectors,
+  each team's spawn) at real-world scale.
+
+What stays **original**: the name, the factions, the map, every model, texture and sound, the weapon names and
+the HUD. Counter-Attack copies Counter-Strike's *mechanics* (rules, rhythm, economy, feel), never its
+*assets*. The game ships nothing from Counter-Strike, so it can be shown, open-sourced or sold without
+borrowing someone else's IP. The gauntlet's references and rubric are the lead's own; see
+[From the gauntlet idea to the flow](#from-the-gauntlet-idea-to-the-flow).
 
 > **Verified for this example:**
 > - Three.js 0.187.0, Vite 8.3.5 and Playwright 1.64.1 with headless Chromium on SwiftShader.
@@ -51,12 +81,12 @@ and that the lead can check afterwards:
 
 | Gauntlet idea | How the flow runs it |
 |---|---|
-| "AAA quality, every single thing" | A list of **gauntlet items**, one task each (lighting, environment, weapon, enemies, VFX, HUD, feel, audio), plus a final whole-game gauntlet. Each item has a written rubric with anchored scores. |
+| "AAA quality, every single thing" | A list of **gauntlet items**, one task each (lighting, environment, weapon, bots, VFX, HUD, feel, audio), plus a final whole-game gauntlet. Each item has a written rubric with anchored scores. |
 | "Fan out sub-agents, one per item" | Inside a task, the orchestrator splits the critic's top flaws into sub-items. It gives each one to a **builder subagent** working in its own git worktree, on its own branch and port. |
 | "/loop on each item" | A gauntlet task runs as a **self-paced `/loop`, one round per firing**. All round state is on disk in `reports/K<N>/GAUNTLET.md`, so a full context or a crash loses nothing. |
 | "A separate sub-agent checks it visually, a harsh critic" | A **fresh critic subagent every round**, at the highest reasoning effort available. It sees only images and the rubric: no code, no builder notes, no history. |
 | "Compare side by side, blind" | `blind.py` pairs candidate and champion frames under random A/B labels. The key is stored where the critic is told not to look. `judge.py` un-blinds the verdict. |
-| "Compare against the real AAA game" | Comparisons are against **reference frames the lead owns or has licensed**: concept paintovers or the lead's own target renders, never another game's screenshots. Emberline is original IP. The bar is AAA *quality*, not a copy of someone's AAA *game*. |
+| "Compare against the real AAA game" | Comparisons are against **reference frames the lead owns or has licensed**: concept paintovers or the lead's own target renders, never another game's screenshots. Counter-Attack plays like Counter-Strike but looks like itself. The bar is AAA *quality*, not a copy of someone's AAA *game*. |
 | "Keep going until it is wowed" | A **gate**: the candidate beats the references in every shot *and* every rubric axis scores ≥ 9, judged by a majority of a three-critic panel. A **round cap** and a **plateau rule** (no promotion for two rounds) stop it otherwise. The RESULT line says honestly whether the gate passed. |
 | "Utterly perfect" | Not a stopping condition. Things the critic can't see (frame rate on real GPUs, sound, how it plays) are marked **unchecked**, and the lead playtests them. |
 
@@ -85,24 +115,25 @@ flowchart TB
 | Task | Kind | Delivers |
 |---|---|---|
 | K1 | server | The scaffold's integration suite passing (the 401 fix from EXAMPLE_AGENT_LAB.md) |
-| K2 | server | `RunStore` service and `POST /game/runs`, `GET /game/leaderboard` (in-memory) |
-| K3 | memo | Where runs should be persisted in Agent-Lab's Postgres/Redis, with file:line evidence |
-| K4 | server | `/live/ws` WebSocket for the director channel |
-| K5 | server | `emberline_director`: a LangGraph agent that picks the next wave, with a deterministic fallback |
-| K6 | client | Game skeleton: capture contract, named shots, seeded RNG, FPS controller, blockout map, budgets |
-| K7 | client | Client ↔ server wiring: run submission, leaderboard screen, director over WebSocket with a local fallback |
+| K2 | server | `MatchStore` service and `POST /game/matches`, `GET /game/leaderboard` (in-memory) |
+| K3 | memo | Where matches should be persisted in Agent-Lab's Postgres/Redis, with file:line evidence |
+| K4 | server | `/live/ws` WebSocket for the round channel |
+| K5 | server | `counter_attack_tactician`: a LangGraph agent that calls the bot team's strategy and buys each round, with a deterministic fallback |
+| K6 | client | Game skeleton: capture contract, named shots, seeded RNG, FPS controller, Foundry blockout, round/economy rules, budgets |
+| K7 | client | Client ↔ server wiring: match submission, leaderboard screen, tactician over WebSocket with a local fallback |
+| K8 | client | Bots: navigation on Foundry, the plant/defuse objective, executing a tactician plan |
 | K10 | gauntlet G1 | Lighting, sky, shadows, post-processing |
 | K11 | gauntlet G2 | Environment: materials, geometry detail, set dressing |
 | K12 | gauntlet G3 | First-person weapon: viewmodel, animation, recoil, muzzle |
-| K13 | gauntlet G4 | Enemies: models, animation, hit reactions, death |
+| K13 | gauntlet G4 | Player models for both factions: models, animation, hit reactions, death |
 | K14 | gauntlet G5 | VFX: tracers, impacts, smoke, decals, explosions |
-| K15 | gauntlet G6 | HUD and menus |
-| K16 | gauntlet G7 | Movement and combat feel (numeric tests and frame strips; the lead playtests) |
+| K15 | gauntlet G6 | HUD, buy menu, scoreboard and menus |
+| K16 | gauntlet G7 | Movement and gunplay feel: counter-strafing, spray patterns (numeric tests and frame strips; the lead playtests) |
 | K17 | non-visual | Audio: mixing, spatialisation, loudness checks (the critic can't hear; the lead listens) |
 | K18 | gauntlet G8 | Whole-game gauntlet: every shot, full frames, against the references, within performance budgets |
 | K19 | docs | README, controls, credits, how to run the gauntlet again |
 
-K8 and K9 are left free for follow-ups the lead may want to insert before the gauntlets.
+K9 is left free for a follow-up the lead may want to insert before the gauntlets.
 
 ---
 
@@ -125,14 +156,14 @@ K8 and K9 are left free for follow-ups the lead may want to insert before the ga
 ### 0.1 Layout
 
 ```
-emberline/
-  server/            Agent-Lab project from the cookiecutter template (package: emberline)
+counter-attack/
+  server/            Agent-Lab project from the cookiecutter template (package: counter_attack)
   client/            Vite + Three.js
     src/main.js      the game; capture mode is part of it
     src/rng.js       the only randomness source
     src/shots/       named camera shots for the gauntlet
     tools/capture.mjs
-    test/            node --test unit tests (pure logic: movement curves, wave tables, ...)
+    test/            node --test unit tests (pure logic: movement, accuracy, spray, rules, economy)
   tools/gauntlet/    blind.py, judge.py: owned by the lead, the agent never edits them
   art/               BIBLE.md, RUBRIC.md, BUDGETS.md, refs/<shot>.png: owned by the lead
 ```
@@ -146,12 +177,12 @@ Follow [EXAMPLE_AGENT_LAB.md Phase 0](EXAMPLE_AGENT_LAB.md#phase-0-scaffold-the-
 into `server/`:
 
 ```bash
-mkdir -p ~/code/emberline && cd ~/code/emberline
+mkdir -p ~/code/counter-attack && cd ~/code/counter-attack
 uvx cookiecutter gh:btech-software/agent-lab --directory cookiecutter --output-dir . \
-  --no-input project_name="Emberline" description="Game backend: runs, leaderboard, AI director" \
+  --no-input project_name="Counter-Attack" description="Game backend: matches, leaderboard, AI bot tactician" \
   author_name="Your Name" author_email="you@example.com" \
   include_docker=true include_github_actions=true include_testcontainers=true
-mv emberline server
+mv counter-attack server
 (cd server && uv lock && uv sync --group dev --group test && make lint test_unit)
 ```
 
@@ -178,7 +209,7 @@ for the same URL. Capture mode is part of the game, and K6 must keep this contra
 ```js
 const q = new URLSearchParams(location.search);
 const capture = q.has('shot');                 // capture mode: fixed clock, one frame, no input
-const shot = SHOTS[q.get('shot') ?? 'courtyard_dusk'];
+const shot = SHOTS[q.get('shot') ?? 'site_a_dusk'];
 const seed = Number(q.get('seed') ?? 1);
 const fixedT = Number(q.get('t') ?? 0);
 const rand = rng(seed);                        // never Math.random()
@@ -224,8 +255,8 @@ export function rng(seed) {
 // Named camera shots the gauntlet captures. Add shots; never change an existing one
 // (champion frames in reports/ were captured with it).
 export const SHOTS = {
-  courtyard_dusk: { pos: [6, 1.7, 8], look: [0, 1, 0] },
-  alley_low: { pos: [-3, 0.4, 4], look: [0, 1.2, -2] },
+  site_a_dusk: { pos: [6, 1.7, 8], look: [0, 1, 0] },
+  mid_low: { pos: [-3, 0.4, 4], look: [0, 1.2, -2] },
 };
 ```
 
@@ -372,8 +403,8 @@ sys.exit(0 if promote else 1)
 Sample output, for a candidate that wins but isn't good enough yet:
 
 ```
-alley_low: won; lowest materials=6; flaw: untextured boxes
-courtyard_dusk: won; lowest materials=6; flaw: untextured boxes
+mid_low: won; lowest materials=6; flaw: untextured boxes
+site_a_dusk: won; lowest materials=6; flaw: untextured boxes
 candidate won 2/2; lowest axis score 6
 PROMOTE
 GATE FAIL
@@ -384,11 +415,14 @@ Run both with `python3 -I` (stdlib only, no project imports).
 ### 0.6 Art direction (lead-owned, in `art/`)
 
 - **`BIBLE.md`:** one page covering:
-  - setting: a refinery district at dusk, near future
-  - palette: warm sodium lights against cold blue shadow
-  - materials: wet concrete, painted steel, sun-bleached signage
+  - setting: Foundry, a half-abandoned steel foundry at dusk, near future
+  - palette: warm sodium lights and furnace glow against cold blue shadow
+  - readability first, as in competitive shooters: each faction has a distinct silhouette and team colour,
+    player models stand out against every wall, and nothing (fog, bloom, foliage) hides a head at range
+  - materials: worn concrete, painted steel, rusted plate, sun-bleached signage
   - mood references described in words
-  - the forbidden list: no other game's logos, characters, weapons-by-trademark or UI layouts
+  - the forbidden list: nothing from Counter-Strike or any other game (map layouts, models, logos, faction
+    names, weapon skins, sounds or HUD layouts), and no trademarked weapon names
 - **`refs/<shot>.png`:** one target frame per named shot, the same size as the captures (1280×720). These are
   the "AAA" bar the gate compares against.
 - **`RUBRIC.md`:** the axes each gauntlet item is scored on, with *anchored* scores so a critic's "9" means
@@ -415,12 +449,12 @@ asset-pipeline CLIs, such as a glTF optimiser, as exact-pinned `devDependencies`
 ### 0.8 Commit the baseline
 
 ```bash
-cd ~/code/emberline
+cd ~/code/counter-attack
 cat > .gitignore <<'EOF'
 .DS_Store
 caps/
 EOF
-git init -b main && git add -A && git commit -m "Scaffold Emberline: Agent-Lab server, Three.js client, gauntlet tools"
+git init -b main && git add -A && git commit -m "Scaffold Counter-Attack: Agent-Lab server, Three.js client, gauntlet tools"
 ```
 
 ---
@@ -429,9 +463,9 @@ git init -b main && git add -A && git commit -m "Scaffold Emberline: Agent-Lab s
 
 ```bash
 cd ~/dev/autonomous-flow
-./new-workspace.sh ~/agents/emberline ~/code/emberline main
-cd ~/agents/emberline
-git -C repo config user.name "emberline-bot"; git -C repo config user.email "bot@invalid"
+./new-workspace.sh ~/agents/counter-attack ~/code/counter-attack main
+cd ~/agents/counter-attack
+git -C repo config user.name "counter-attack-bot"; git -C repo config user.email "bot@invalid"
 
 # server: same as EXAMPLE_AGENT_LAB.md 1.2-1.5
 (cd repo/server && uv sync --frozen --group dev --group test && UV_OFFLINE=1 make lint test_unit)
@@ -444,11 +478,11 @@ docker pull hashicorp/vault:1.18.1; docker pull testcontainers/ryuk:0.8.1
 
 # smoke test, with the network off: must print stats and write two PNGs
 (cd repo/client && PLAYWRIGHT_BROWSERS_PATH=$PWD/../../.pw-browsers \
-   npm run capture -- ../../reports/K0/baseline courtyard_dusk alley_low && npm test)
+   npm run capture -- ../../reports/K0/baseline site_a_dusk mid_low && npm test)
 
 # raw assets and framework notes
 mkdir -p inputs/assets inputs/agent-lab
-cp -R ~/assets/emberline/* inputs/assets/      # your licensed downloads + their LICENSES.md
+cp -R ~/assets/counter-attack/* inputs/assets/      # your licensed downloads + their LICENSES.md
 # + DEV_GUIDE.md etc. and PATTERNS.md as in EXAMPLE_AGENT_LAB.md 1.5
 ```
 
@@ -479,12 +513,14 @@ changes:
 - Add the client and gauntlet sections below.
 
 ```markdown
-# Brief: Emberline
+# Brief: Counter-Attack
 
-You help build Emberline, an original first-person shooter: a Three.js client (client/) and an Agent-Lab
-server (server/, Python 3.12, FastAPI, LangGraph). The lead gives you tasks in TASKS.md and reviews everything
-before it goes anywhere. Emberline is original IP: never reproduce another game's names, characters, logos,
-maps, UI layouts or trademarked weapon names, even if an input mentions one.
+You help build Counter-Attack, a round-based tactical shooter heavily influenced by Counter-Strike: a Three.js
+client (client/) and an Agent-Lab server (server/, Python 3.12, FastAPI, LangGraph). The lead gives you tasks
+in TASKS.md and reviews everything before it goes anywhere.
+Match Counter-Strike's mechanics where a task asks for them (rounds, economy, plant/defuse, movement-based
+accuracy, spray patterns). Never reproduce its assets or any other game's: map layouts, models, textures,
+sounds, logos, faction names, HUD layouts or trademarked weapon names, even if an input mentions one.
 
 Workspace: this folder. repo/ is a local copy of main with no remote. Write only inside this folder.
 
@@ -505,7 +541,7 @@ Workspace: this folder. repo/ is a local copy of main with no remote. Write only
   window.__stats and window.__ready. Never use Math.random(), Date.now() or performance.now() in anything
   that affects a captured frame; use src/rng.js and the fixed clock.
 - Never change an existing entry in src/shots/index.js; add new shots instead.
-- Pure logic (movement curves, wave tables, damage, scoring) lives in modules with node --test tests.
+- Pure logic (movement curves, economy, damage, scoring) lives in modules with node --test tests.
 - Assets: copy only from inputs/assets/, list every file in client/public/assets/CREDITS.md with source and
   licence. No asset without a licence entry.
 - Stay within art/BUDGETS.md in every captured shot (stats.json).
@@ -602,88 +638,120 @@ table, round cap and gate. Everything else is in `GAUNTLET_ROUND.md`.
 ## K1 (now; lead, 2026-11-09 09:00 UTC): the server's integration suite fails with 401
 As K1 in EXAMPLE_AGENT_LAB.md, in repo/server. Branch k1 from main. RESULT line.
 
-## K2 (after K1; lead, 2026-11-09 09:00 UTC): runs and leaderboard API
-Branch k2 from k1. A RunStore service on the container (in-memory for now, behind a small interface:
-add(run) -> id, top(n) -> list). Routes via RouterMount at /game:
-POST /game/runs {player: str 1-24 chars, seed: int, score: int >= 0, duration_s: float > 0, wave: int >= 1}
--> {id, rank}; GET /game/leaderboard?n=10 -> [{player, score, wave}], highest score first, ties by shorter
-duration. Reject a score above 5000 * wave (422) as an obvious-cheat guard. Unit tests for the service and
-both routes (no Postgres). RESULT line.
+## K2 (after K1; lead, 2026-11-09 09:00 UTC): matches and leaderboard API
+Branch k2 from k1. A MatchStore service on the container (in-memory for now, behind a small interface:
+add(match) -> id, top(n) -> list). Routes via RouterMount at /game:
+POST /game/matches {player: str 1-24 chars, seed: int, side: "attackers"|"defenders", rounds_won: 0-13,
+rounds_lost: 0-13, kills: int >= 0, deaths: int >= 0, headshots: int >= 0, plants: int >= 0, defuses: int >= 0}
+-> {id, rank}; GET /game/leaderboard?n=10 -> [{player, rating, kills, deaths}], highest rating first.
+Rating = round wins * 100 + kills * 10 + headshots * 5 + (plants + defuses) * 25. Reject impossible matches
+(422): neither side at 13 and the total under 24, both at 13, headshots > kills, kills > 5 * total rounds.
+Unit tests for the service and both routes (no Postgres). RESULT line.
 
-## K3 (now, read-only; lead, 2026-11-09 09:00 UTC): where should runs be persisted?
+## K3 (now, read-only; lead, 2026-11-09 09:00 UTC): where should matches be persisted?
 No code. Read the Agent-Lab sources in repo/server/.venv and the template's config: which Postgres
 databases, Redis access and migrations exist, and how an extra service would reach them. Write
 reports/K3/MEMO.md: two options with file:line evidence, the test story for each under testcontainers, and a
 recommendation. RESULT line.
 
-## K4 (after K2; lead, 2026-11-09 09:00 UTC): the director channel
+## K4 (after K2; lead, 2026-11-09 09:00 UTC): the round channel
 Branch k4 from k2. WebSocket at /live/ws via RouterMount (pattern below). Messages are JSON with a seq:
-client -> {"seq", "type": "wave_end", "wave", "telemetry": {accuracy, damage_taken, time_s, deaths}};
-server -> {"seq", "type": "next_wave", "wave", "plan": {...}, "source": "director" | "fallback"}.
-For now plan comes from a deterministic WaveTable service on the container (wave n: count, mix, spawn
-points chosen from the telemetry with fixed rules). Unit tests with TestClient.websocket_connect. RESULT line.
+client -> {"seq", "type": "round_end", "round", "score": [a, d], "bot_side", "bank": [5 ints],
+"telemetry": {winner, how: "elimination"|"detonation"|"defuse"|"time", plant_site, player_route: [zones],
+player_kills_by_zone, utility_used}};
+server -> {"seq", "type": "round_plan", "round", "plan": {"strategy", "site", "roles": [5], "buys": [5]},
+"source": "tactician" | "fallback"}.
+For now plan comes from a deterministic Playbook service on the container: buys follow the bank (full buy,
+force, eco by fixed thresholds); strategy is picked from a fixed list by the last two rounds' results
+(attack: rush, split, default, fake; defence: stack, standard, retake). Unit tests with
+TestClient.websocket_connect. RESULT line.
 
-## K5 (after K4; lead, 2026-11-09 09:00 UTC): emberline_director agent
-Branch k5 from k4. An LLM-backed LangGraph agent (WorkflowAgentBase, like the template's react_agent) that
-takes the telemetry and the WaveTable's plan and returns an adjusted plan in a strict JSON schema, plus one
-radio callout line (<= 80 chars, original wording). Validate the output; anything invalid or slower than
-the configured timeout (default 300 ms) falls back to the WaveTable plan with source "fallback". /live/ws
-uses the agent when it is configured, otherwise the fallback. Tests: fake chat model (PATTERNS.md) for a
-valid plan, an invalid plan, and a timeout. Real-model behaviour is unchecked. RESULT line.
+## K5 (after K4; lead, 2026-11-09 09:00 UTC): counter_attack_tactician agent
+Branch k5 from k4. An LLM-backed LangGraph agent (WorkflowAgentBase, like the template's react_agent): the
+bots' in-game leader. It takes the round history, the banks and the Playbook's plan and returns an adjusted
+plan in a strict JSON schema (strategy and site from the fixed lists, a role per bot, a buy per bot that the
+bank can afford), plus one radio call (<= 80 chars, original wording). Validate the output; anything invalid
+or slower than the configured timeout (default 300 ms) falls back to the Playbook plan with source
+"fallback". /live/ws uses the agent when it is configured, otherwise the fallback. Tests: fake chat model
+(PATTERNS.md) for a valid plan, an unaffordable buy, an unknown site, and a timeout. Real-model behaviour is
+unchecked. RESULT line.
 
 ## K6 (now; lead, 2026-11-09 09:00 UTC): game skeleton
-Branch k6 from main (client only). Keep the capture contract and the existing shots. Add: a first-person
-controller (pointer lock, WASD, sprint, crouch, jump) with its curves in src/game/movement.js and tests for
-acceleration time, top speed and jump apex; a blockout of the refinery district (courtyard, alley, catwalk,
-pump hall) at real-world scale; shots pump_hall_wide, catwalk_high, weapon_fire (camera at eye height,
-weapon in view); a placeholder weapon and enemy capsules; a stats overlay (toggle F3, off in capture mode).
-Capture all shots into reports/K6/frames/ and list their stats. RESULT line.
+Branch k6 from main (client only). Keep the capture contract and the existing shots. Add, each with
+node --test tests:
+- src/game/movement.js: walk/run/crouch speeds, acceleration, friction and stop time (a counter-strafe
+  stops you in <= 80 ms), jump apex; a speed penalty per weapon weight.
+- src/game/accuracy.js: inaccuracy from speed, stance and air; first shot accurate when standing still.
+- src/game/spray.js: a fixed spray pattern per weapon (table of offsets) plus small seeded jitter.
+- src/game/rules.js: round state machine (buy 15 s, live 115 s, plant 40 s fuse, defuse 10/5 s, end 5 s),
+  win conditions, first to 13, side swap after 12.
+- src/game/economy.js: start money, cap, win bonus, loss bonus rising per consecutive loss, kill rewards by
+  weapon class, plant and defuse rewards, prices.
+Plus: a first-person controller using those modules (pointer lock, WASD, walk on Shift, crouch, jump); a
+blockout of Foundry (A site, B site, mid, connectors, both spawns) at real-world scale; shots b_site_wide,
+a_ramp_high, weapon_fire (camera at eye height, weapon in view); placeholder weapons and capsule bots; a
+stats overlay (toggle F3, off in capture mode). Capture all shots into reports/K6/frames/ and list their
+stats. RESULT line.
 
 ## K7 (after K6, K5; lead, 2026-11-09 09:00 UTC): client <-> server
-Branch k7 from k6, then merge k5 into it (commit the merge). client/src/net/: submit a run at game over,
-leaderboard screen, director over /live/ws. The client never waits on the server: if no next_wave arrives
-within 300 ms it uses a local copy of the wave rules and says so in the stats overlay. Vite dev/preview
+Branch k7 from k6, then merge k5 into it (commit the merge). client/src/net/: submit the match at match
+end, leaderboard screen, tactician over /live/ws during the end-of-round pause. The client never waits on the
+server: if no round_plan arrives within 300 ms it uses a local copy of the Playbook rules and says so in
+the stats overlay. Vite dev/preview
 proxy: /api -> http://127.0.0.1:18000 (compose.yml's app port), ws included. Tests: node --test for the
 fallback timing with a fake socket; a Playwright test against vite preview with page.route mocking the
 server (no real server in the agent's environment). End-to-end with the real server is unchecked. RESULT line.
 
-## K10 (after K7; lead, 2026-11-09 09:00 UTC): gauntlet G1, lighting, sky and post
-Gauntlet. Base k7, branch k10. Item: lighting, sky, shadows, exposure, post-processing; no geometry or
-material changes beyond what light needs. Shots: courtyard_dusk, alley_low, pump_hall_wide, catwalk_high.
+## K8 (after K7; lead, 2026-11-09 09:00 UTC): bots
+Branch k8 from k7. src/bots/: a navigation graph for Foundry (zones and links, baked from the blockout),
+movement along it, the objective (carry, plant and defuse the charge), simple combat (reaction time,
+aim error by skill level, using the same accuracy and spray modules as the player), and executing a
+round_plan (strategy, site, roles, buys). Tests with node --test: a full round of 5 bots vs 5 bots runs to
+an end with a fixed seed and gives the same result twice; an attacker team with a "rush B" plan reaches
+B first; bots never buy what they cannot afford. Add shot bots_b_rush at a fixed t. RESULT line.
+
+## K10 (after K8; lead, 2026-11-09 09:00 UTC): gauntlet G1, lighting, sky and post
+Gauntlet. Base k8, branch k10. Item: lighting, sky, shadows, exposure, post-processing; no geometry or
+material changes beyond what light needs. Shots: site_a_dusk, mid_low, b_site_wide, a_ramp_high.
 Rubric: art/RUBRIC.md "G1". Round cap 8. Gate 9 against art/refs. Run with the gauntlet
 /loop (PROMPTS below). RESULT line when DONE.
 
 ## K11 (after K10; ...): gauntlet G2, environment
 Gauntlet. Base k10, branch k11. Item: materials (PBR from inputs/assets), geometry detail, trim and
-decals, set dressing, wetness. Shots: the four above. Rubric "G2". Round cap 10. Gate 9.
+decals, set dressing, sightline readability (see BIBLE.md). Shots: the four above. Rubric "G2". Round cap 10. Gate 9.
 
 ## K12 (after K11; ...): gauntlet G3, first-person weapon
 Gauntlet. Base k11, branch k12. Item: viewmodel model and materials, idle sway, ADS, fire/recoil
-animation, muzzle flash, shell ejection. Shots: weapon_fire as a frame strip at t = 0, 0.033, 0.066, 0.1,
-0.15, 0.25 (capture each into r<R>/<who>/weapon_fire_t<t>.png), plus weapon_ads. Rubric "G3". Cap 10.
+animation, muzzle flash, shell ejection, inspect. One rifle per side, the pistol and the sniper rifle.
+Shots: weapon_fire as a frame strip at t = 0, 0.033, 0.066, 0.1, 0.15, 0.25 (capture each into
+r<R>/<who>/weapon_fire_t<t>.png), plus weapon_scope. Rubric "G3". Cap 10.
 Gate 9; the reference for each strip frame is art/refs/weapon_fire_t<t>.png.
 
-## K13 (after K12; ...): gauntlet G4, enemies
-Gauntlet. Base k12, branch k13. Item: enemy models (rigged, from inputs/assets), materials, locomotion
-and hit/death animation via AnimationMixer at fixed times. Shots: enemy_close, enemy_hit (strip), squad_mid.
+## K13 (after K12; ...): gauntlet G4, player models
+Gauntlet. Base k12, branch k13. Item: Attacker and Defender models (rigged, from inputs/assets), materials,
+team readability at range, locomotion, plant/defuse and hit/death animation via AnimationMixer at fixed
+times. Shots: attacker_close, defender_close, hit_strip, readability_long (a head at 40 m against the
+darkest wall).
 Rubric "G4". Cap 10. Gate 9.
 
 ## K14 (after K13; ...): gauntlet G5, VFX
 Gauntlet. Base k13, branch k14. Item: tracers, impacts per surface, smoke, sparks, decals, explosion.
-Shots: impact_concrete (strip), impact_metal (strip), explosion_pump (strip). Rubric "G5". Cap 10. Gate 9.
+Shots: impact_concrete (strip), impact_metal (strip), smoke_mid (strip), flash_a (strip), charge_detonation (strip). Rubric "G5". Cap 10. Gate 9.
 
 ## K15 (after K14; ...): gauntlet G6, HUD and menus
-Gauntlet. Base k14, branch k15. Item: HUD (health, ammo, wave, callout line), hit markers, main menu,
-leaderboard screen. Original layout per BIBLE.md. Shots: hud_combat, menu_main, leaderboard. Rubric "G6".
+Gauntlet. Base k14, branch k15. Item: HUD (health, armour, ammo, money, round timer, team
+alive counts, charge status, kill feed, radio call), crosshair, buy menu, scoreboard, main menu, leaderboard
+screen. Original layout per BIBLE.md. Shots: hud_combat, buy_menu, scoreboard, menu_main, leaderboard. Rubric "G6".
 Cap 6. Gate 9.
 
 ## K16 (after K15; ...): gauntlet G7, movement and combat feel
-Gauntlet with numeric checks first: movement and recoil curves must meet art/BUDGETS.md "feel" targets in
-node --test before any capture. Shots: sprint_strip, slide_strip, recoil_strip. Rubric "G7". Cap 6. Gate 9.
+Gauntlet with numeric checks first: counter-strafe stop time, first-shot accuracy, spray patterns and
+recovery must meet art/BUDGETS.md "feel" targets in node --test before any capture. Shots: strafe_strip,
+spray_wall (30 bullets on a wall at 10 m, showing the pattern), recoil_strip. Rubric "G7". Cap 6. Gate 9.
 Mark in the RESULT line that feel is unchecked until the lead playtests.
 
 ## K17 (after K16; ...): audio
-Not a gauntlet (the critic cannot hear). Spatialised weapon, impact, enemy and ambience sound from
+Not a gauntlet (the critic cannot hear). Spatialised weapon, footstep (by surface, audible through walls as in competitive shooters), impact, charge beep and ambience sound from
 inputs/assets via THREE.PositionalAudio; a mixer with buses. Checks: node --test on the mixer rules; a
 script that decodes every sound file and reports peak and duration, nothing clipping. Everything audible is
 unchecked. RESULT line.
@@ -704,7 +772,7 @@ Verified on Agent-Lab 1.17.12. A WebSocket route mounts like any other extra rou
 without an auth header when auth is disabled. With auth enabled, behaviour is unchecked.
 
 ```python
-# server/emberline/api/live.py
+# server/counter_attack/api/live.py
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 router = APIRouter()
@@ -722,10 +790,10 @@ async def live(ws: WebSocket) -> None:
 ```
 
 ```python
-# server/emberline/main.py
+# server/counter_attack/main.py
 app = create_app(
     container=Container(),
-    scan_packages=["emberline.agents", "emberline.mcp"],
+    scan_packages=["counter_attack.agents", "counter_attack.mcp"],
     extra_routers=[
         RouterMount(game_router, "/game", ["game"]),
         RouterMount(live_router, "/live", ["live"]),
@@ -737,7 +805,7 @@ app = create_app(
 # server/tests/unit/test_live.py
 from fastapi.testclient import TestClient
 
-from emberline.main import app
+from counter_attack.main import app
 
 
 def test_websocket_without_auth_header():
@@ -746,7 +814,7 @@ def test_websocket_without_auth_header():
         assert ws.receive_json() == {"ack": 7}
 ```
 
-Services reach WebSocket handlers the same way as HTTP handlers: `ws.app.container.wave_table()`.
+Services reach WebSocket handlers the same way as HTTP handlers: `ws.app.container.playbook()`.
 
 ---
 
@@ -757,7 +825,7 @@ Services reach WebSocket handlers the same way as HTTP handlers: `ws.app.contain
 Run them exactly as in the Agent-Lab example:
 
 ```bash
-cd ~/agents/emberline
+cd ~/agents/counter-attack
 export UV_OFFLINE=1 PLAYWRIGHT_BROWSERS_PATH=$PWD/.pw-browsers
 claude
 ```
@@ -772,7 +840,7 @@ Each gauntlet task runs in its **own session** as a self-paced loop. Every firin
 can be replaced at any time, because round state lives in `GAUNTLET.md`.
 
 ```bash
-cd ~/agents/emberline && claude
+cd ~/agents/counter-attack && claude
 ```
 
 > /loop Gauntlet round for the first task marked "Gauntlet" with no RESULT line in RESULTS.md. Follow BRIEF.md
@@ -832,8 +900,8 @@ A gauntlet ledger after the loop stopped (`reports/K10/GAUNTLET.md`):
 | r1    | flat-ambient, no-sky, hard-shadows  | sky, soft-shadow | 3/3, 2/3, 1/3    | 0/3        | atmosphere=3     | 81 / 0.7k     |
 | r2    | no-fog-depth, clipped-sun, banding  | height-fog       | 3/3, 1/3, 1/3    | 0/3        | exposure_color=5 | 84 / 0.7k     |
 | ...   |                                     |                  |                  |            |                  |               |
-| r7    | shaft-noise, grade-mismatch-alley   | grade-alley      | 2/3, 1/3         | 2/3        | artifacts=9      | 212 / 1.9M    |
-DONE r7: gate passed 2/3 (critic 3: alley_low lost to reference, "shaft noise on the left wall").
+| r7    | shaft-noise, grade-mismatch-mid   | grade-mid       | 2/3, 1/3         | 2/3        | artifacts=9      | 212 / 1.9M    |
+DONE r7: gate passed 2/3 (critic 3: mid_low lost to reference, "shaft noise on the left wall").
 ```
 
 A RESULT line for it:
@@ -841,7 +909,7 @@ A RESULT line for it:
 ```
 RESULT 2026-11-11 03:12 UTC K10 Branch k10 from k7; 11 commits (7 promotions, 4 merges); out/k10.patch
 applies. Gate passed in r7 (2/3 critics: candidate beat the references in all 4 shots, lowest axis 9);
-critic 3 still flags shaft noise in alley_low (reports/K10/r7/verdict-ref-3.json). Within budget on every
+critic 3 still flags shaft noise in mid_low (reports/K10/r7/verdict-ref-3.json). Within budget on every
 shot (max 212 calls, 1.9M tris). npm test 14/14. Real-GPU look and frame rate unchecked.
 ```
 
@@ -882,9 +950,9 @@ A follow-up after the playtest:
 ```markdown
 ## K10b (now; lead, 2026-11-11 10:00 UTC): the review's changes to K10
 inputs/review-D014.md asks: 1) the volumetric shafts shimmer when the camera moves (stills can't see it):
-make them temporally stable, add shot alley_pan as a 6-frame strip at 1/30 s steps; 2) the SSAO pass is
+make them temporally stable, add shot mid_pan as a 6-frame strip at 1/30 s steps; 2) the SSAO pass is
 enabled only in capture mode (main.js:212); enable it in play mode or remove it from capture. Same branch
-k10. Gauntlet with cap 4 on shots alley_low, alley_pan; gate 9. Re-export out/k10.patch; RESULT line saying
+k10. Gauntlet with cap 4 on shots mid_low, mid_pan; gate 9. Re-export out/k10.patch; RESULT line saying
 how each ask was met.
 ```
 
@@ -896,10 +964,10 @@ Patches with binary assets can be large. Two ways to land:
 
 ```bash
 # A) patches, as in the rest of the flow
-cd ~/code/emberline && git checkout -b land-k10 main && git am ~/agents/emberline/out/k10.patch
+cd ~/code/counter-attack && git checkout -b land-k10 main && git am ~/agents/counter-attack/out/k10.patch
 
 # B) for asset-heavy branches: fetch straight from the workspace clone (local, no network)
-git fetch ~/agents/emberline/repo k10:land-k10
+git fetch ~/agents/counter-attack/repo k10:land-k10
 ```
 
 Then run the server and the client together:
@@ -909,8 +977,8 @@ Then run the server and the client together:
 (cd client && npm run build && npx vite preview)                      # proxies /api to :18000 (K7)
 ```
 
-Open the preview URL on a machine with a GPU, play several waves, check the leaderboard and the director's
-callouts. Then compare the real-GPU look with the champion frames. Tone mapping and shadow filtering can differ
+Open the preview URL on a machine with a GPU, play a full match against the bots, check the leaderboard and
+the tactician's radio calls. Then compare the real-GPU look with the champion frames. Tone mapping and shadow filtering can differ
 slightly from SwiftShader; large differences become a follow-up task.
 
 ---
