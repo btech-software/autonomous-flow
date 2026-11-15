@@ -1,4 +1,4 @@
-# Example: a AAA-grade Three.js shooter with gauntlet loops
+# Example: Counter-Attack, an AAA-grade Three.js shooter with gauntlet loops
 
 This walkthrough uses the autonomous flow to build **Counter-Attack**, a round-based tactical first-person
 shooter, from a blank folder to a polished vertical slice. Counter-Attack is openly and heavily influenced by
@@ -567,7 +567,7 @@ Workspace: this folder. repo/ is a local copy of main with no remote. Write only
 Each critic is started fresh with this text, the task's rubric table and the path of one pairs folder:
 
 ```markdown
-You are a senior art director at a top studio reviewing frames for a AAA first-person shooter. You are hard to
+You are a senior art director at a top studio reviewing frames for an AAA first-person shooter. You are hard to
 impress. Your reputation depends on never passing work that would embarrass the studio at launch.
 
 You get folders <shot>/A.png and <shot>/B.png. You do not know how either image was made or which one is
