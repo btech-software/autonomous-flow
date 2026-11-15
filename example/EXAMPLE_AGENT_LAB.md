@@ -11,7 +11,7 @@ RESULT line.
 
 > Everything below was checked against **Agent-Lab 1.17.12** with a baked project. That covers the scaffold
 > commands, the offline test runs, the code patterns in [Agent-Lab patterns](#agent-lab-patterns-the-agent-must-follow),
-> and the fix in K1. If you use a newer release, re-run Phase 0 and adjust what changed.
+> and the fix in task-01. If you use a newer release, re-run Phase 0 and adjust what changed.
 
 ---
 
@@ -19,14 +19,14 @@ RESULT line.
 
 | Task | Delivers |
 |---|---|
-| K1 | The scaffold's integration suite passing (it ships failing; see K1) |
-| K2 | `TicketClassifier` domain service, provided by the DI container |
-| K3 | `POST /triage/classify`: an extra FastAPI router mounted with `RouterMount` |
-| K4 | `ticket_triage_classifier` agent, reachable through `/agents` and `/messages`, using the service via `extra_deps` |
-| K5 | `ticket_triage_router`: an LLM-backed LangGraph agent, tested with a fake chat model |
-| K6 | `ticket_triage_classify_tool`: an MCP tool at `/mcp` |
-| K7 | A read-only memo: how to persist tickets in Agent-Lab's databases |
-| K8 | README and docs for the new API |
+| task-01 | The scaffold's integration suite passing (it ships failing; see task-01) |
+| task-02 | `TicketClassifier` domain service, provided by the DI container |
+| task-03 | `POST /triage/classify`: an extra FastAPI router mounted with `RouterMount` |
+| task-04 | `ticket_triage_classifier` agent, reachable through `/agents` and `/messages`, using the service via `extra_deps` |
+| task-05 | `ticket_triage_router`: an LLM-backed LangGraph agent, tested with a fake chat model |
+| task-06 | `ticket_triage_classify_tool`: an MCP tool at `/mcp` |
+| task-07 | A read-only memo: how to persist tickets in Agent-Lab's databases |
+| task-08 | README and docs for the new API |
 
 ```mermaid
 flowchart LR
@@ -35,8 +35,8 @@ flowchart LR
     W --> T[TASKS.md]
   end
   subgraph Agent["Agent (offline)"]
-    T --> K[kN branch] --> V["make lint / test_unit / test_integration"]
-    V --> P[out/kN.patch + reports/KN + RESULT]
+    T --> K[task-NN branch] --> V["make lint / test_unit / test_integration"]
+    V --> P[out/task-NN.patch + reports/task-NN + RESULT]
   end
   P --> R[Reviewer] --> T
   P --> M[Lead: git am, docker compose, PR]
@@ -108,7 +108,7 @@ make test_integration
 
 `make test_integration` **fails on a fresh scaffold** with Agent-Lab 1.17.12: the echo test gets
 `KeyError: 'id'` because `/integrations/create` answers `401 Request is not authenticated`. Keep the failure.
-It becomes the agent's first task (K1), which also proves the agent can drive the testcontainers suite.
+It becomes the agent's first task (task-01), which also proves the agent can drive the testcontainers suite.
 
 ### 0.3 Commit the baseline
 
@@ -212,9 +212,9 @@ Workspace: this folder. repo/ is a local copy of main with no remote. Write only
 - When none is left, append `IDLE <UTC time>` and wait. If blocked, append
   `BLOCKED <UTC time> <task id> <why, what you tried>` and go on.
 - Append to RESULTS.md with `cat >> RESULTS.md <<'EOF'`; never rewrite earlier lines.
-- Branch per task: `k<N>` from the base the task names. Deliver
-  `git format-patch <base>..k<N> --stdout > ../out/k<N>.patch` and confirm `git apply --check` on the base.
-- A suffixed task (K3b) carries a review's asks from inputs/review-D*.md: same branch, one new commit, re-export
+- Branch per task: `task-<NN>` from the base the task names. Deliver
+  `git format-patch <base>..task-<NN> --stdout > ../out/task-<NN>.patch` and confirm `git apply --check` on the base.
+- A fix task (task-03-fix1) carries a review's asks from inputs/review-task-<NN>-<M>.md: same branch, one new commit, re-export
   the patch, say in the RESULT line how each ask was met.
 - Work already on a task's branch or in the working tree is yours from an earlier session. Keep it.
 
@@ -347,7 +347,7 @@ Create integration → language model → agent, then post a message. The scaffo
 `tests/integration/test_echo_agent_api.py` has `create_agent(client)`. Give it an `agent_type` parameter and
 reuse it.
 
-### Auth-disabled tests need an anonymous user (fixed in K1)
+### Auth-disabled tests need an anonymous user (fixed in task-01)
 
 With `auth.enabled: false` no auth middleware is installed. fastapi-keycloak-middleware 2.x's `get_user` then
 raises 401 instead of returning `None`, and `None` is what maps to the `public` schema. Override it for the test
@@ -412,70 +412,70 @@ Check registration with `tool_registration.registered_tools()`, as `tests/unit/t
 The lead appends these to `TASKS.md`, all at once or a few at a time. Each one is self-contained.
 
 ```markdown
-## K1 (now; lead, 2026-11-05 09:00 UTC): the scaffold's integration suite fails with 401
+## task-01 (now; lead, 2026-11-05 09:00 UTC): the scaffold's integration suite fails with 401
 On a fresh scaffold, `make test_integration` fails: tests/integration/test_echo_agent_api.py raises
 KeyError: 'id' because POST /integrations/create answers 401 "Request is not authenticated" with
-auth.enabled false in config-test.yml. On a branch k1 from main: find exactly why (file:line in the installed
+auth.enabled false in config-test.yml. On a branch task-01 from main: find exactly why (file:line in the installed
 agent_lab and fastapi_keycloak_middleware), and fix it in this project's tests only, without changing
-config-test.yml's auth setting or anything under .venv. `make test_integration` passes. Deliver out/k1.patch,
-reports/K1/REPORT.md with the cause, and say whether it belongs upstream in the template; RESULT line.
+config-test.yml's auth setting or anything under .venv. `make test_integration` passes. Deliver out/task-01.patch,
+reports/task-01/REPORT.md with the cause, and say whether it belongs upstream in the template; RESULT line.
 
-## K2 (after K1; lead, 2026-11-05 09:00 UTC): a TicketClassifier service on the container
-On a branch k2 from k1: add ticket_triage/services/classifier.py with TicketClassifier.classify(text) -> str
+## task-02 (after task-01; lead, 2026-11-05 09:00 UTC): a TicketClassifier service on the container
+On a branch task-02 from task-01: add ticket_triage/services/classifier.py with TicketClassifier.classify(text) -> str
 returning one of billing, outage, account, other by keyword (billing: invoice, refund, charge, payment;
 outage: down, 500, timeout, unavailable; account: password, login, 2fa, locked; case-insensitive; first match
 in that order). Provide it as a Singleton named ticket_classifier on ticket_triage/core/container.py's
 Container. Unit tests for each category, the order rule (a text with both "refund" and "down" is billing),
-and the empty string. Deliver out/k2.patch, reports/K2/REPORT.md; RESULT line.
+and the empty string. Deliver out/task-02.patch, reports/task-02/REPORT.md; RESULT line.
 
-## K3 (after K2; lead, 2026-11-05 09:00 UTC): POST /triage/classify
-On a branch k3 from k2: an APIRouter in ticket_triage/api/triage.py with POST /classify taking
+## task-03 (after task-02; lead, 2026-11-05 09:00 UTC): POST /triage/classify
+On a branch task-03 from task-02: an APIRouter in ticket_triage/api/triage.py with POST /classify taking
 {"text": str} and returning {"category": str} from the container's ticket_classifier, mounted at /triage
 with RouterMount (authenticated like the framework routes). Empty or missing text is a 422. Unit tests
 through TestClient: one per category, the 422s, and that the route appears in /openapi.json under the
-"triage" tag. Deliver out/k3.patch, reports/K3/REPORT.md; RESULT line.
+"triage" tag. Deliver out/task-03.patch, reports/task-03/REPORT.md; RESULT line.
 
-## K4 (after K3; lead, 2026-11-05 09:00 UTC): a ticket_triage_classifier agent
-On a branch k4 from k3: an AgentBase agent registered as ticket_triage_classifier, with ticket_classifier
+## task-04 (after task-03; lead, 2026-11-05 09:00 UTC): a ticket_triage_classifier agent
+On a branch task-04 from task-03: an AgentBase agent registered as ticket_triage_classifier, with ticket_classifier
 injected through extra_deps, whose reply message_content is the category and whose response_data carries
 {"category": ..., "text": ...}. Unit test: it is registered and listed by /agents/types (do not instantiate
 it). Integration test through /agents/create and /messages/post that "my invoice was charged twice" replies
-billing. Deliver out/k4.patch, reports/K4/REPORT.md; RESULT line.
+billing. Deliver out/task-04.patch, reports/task-04/REPORT.md; RESULT line.
 
-## K5 (after K4; lead, 2026-11-05 09:00 UTC): an LLM router agent with a deterministic fallback
-On a branch k5 from k4: a WorkflowAgentBase agent ticket_triage_router (LangGraph) with two nodes:
+## task-05 (after task-04; lead, 2026-11-05 09:00 UTC): an LLM router agent with a deterministic fallback
+On a branch task-05 from task-04: a WorkflowAgentBase agent ticket_triage_router (LangGraph) with two nodes:
 "classify" (the ticket_classifier service) then "route" (a chat model, with a system prompt stored as the
 agent setting route_system_prompt from a default prompt file, rendered with parse_prompt_template and
 given the category). If the model call raises, the reply is "route to <category> queue" and response_data
 says fallback true. Integration tests with a fake chat model (inputs/agent-lab/PATTERNS.md): the model's
 answer is returned; a raising model gives the fallback; the setting is created on agent creation and an
 update through the agents settings endpoint changes the prompt the model receives. Real-model behaviour is
-unchecked. Deliver out/k5.patch, reports/K5/REPORT.md; RESULT line.
+unchecked. Deliver out/task-05.patch, reports/task-05/REPORT.md; RESULT line.
 
-## K6 (after K5; lead, 2026-11-05 09:00 UTC): expose classification over MCP
-On a branch k6 from k5: a discoverable MCP tool ticket_triage_classify_tool(text) returning the category,
+## task-06 (after task-05; lead, 2026-11-05 09:00 UTC): expose classification over MCP
+On a branch task-06 from task-05: a discoverable MCP tool ticket_triage_classify_tool(text) returning the category,
 read-only annotation, replacing nothing (keep the example tool). Unit test that it is registered, and a
 test that calls the tool function with the app's container and gets billing for "refund please". Deliver
-out/k6.patch, reports/K6/REPORT.md; RESULT line.
+out/task-06.patch, reports/task-06/REPORT.md; RESULT line.
 
-## K7 (now, read-only; lead, 2026-11-05 09:00 UTC): how should tickets be persisted?
+## task-07 (now, read-only; lead, 2026-11-05 09:00 UTC): how should tickets be persisted?
 No code. From the installed agent_lab (domain models, repositories, the three databases in config-test.yml,
-how schemas per user are chosen), write reports/K7/MEMO.md: the options for storing tickets and their
+how schemas per user are chosen), write reports/task-07/MEMO.md: the options for storing tickets and their
 classification (Agent-Lab's relational DB with our own tables, the checkpoints DB, the vectors DB for
 similar-ticket search), what each needs (migrations, a repository, a container provider), how tenant
 schemas affect it, and a one-paragraph recommendation. file:line for every claim. RESULT line.
 
-## K8 (after K6; lead, 2026-11-05 09:00 UTC): document the API
-On a branch k8 from k6: README.md sections for POST /triage/classify (curl example with a bearer header),
+## task-08 (after task-06; lead, 2026-11-05 09:00 UTC): document the API
+On a branch task-08 from task-06: README.md sections for POST /triage/classify (curl example with a bearer header),
 the two agents (how to create them through /agents/create and post to them), and the MCP tool; keep the
-existing sections. No code changes. Deliver out/k8.patch; RESULT line.
+existing sections. No code changes. Deliver out/task-08.patch; RESULT line.
 ```
 
 Why the queue is shaped this way:
 
-- **Stacked branches** (k2 from k1, k3 from k2, ...) because each step builds on the previous one. The lead
+- **Stacked branches** (task-02 from task-01, task-03 from task-02, ...) because each step builds on the previous one. The lead
   lands them in order. If the lead drops one, the next task's header says the new base.
-- **K7 is `now` and read-only.** The agent can do it any time, and its memo shapes later persistence tasks
+- **task-07 is `now` and read-only.** The agent can do it any time, and its memo shapes later persistence tasks
   without blocking the build.
 - **Every task names its tests.** That is what lets the agent finish without asking anything.
 
@@ -497,18 +497,18 @@ For unattended idle polling in Claude Code:
 > /loop 10m Read the tail of TASKS.md and RESULTS.md. If a task has no RESULT or BLOCKED line, work it under
 > BRIEF.md; otherwise append `IDLE <UTC time>` to RESULTS.md.
 
-What a session looks like for one task (K4):
+What a session looks like for one task (task-04):
 
 ```bash
-cd repo && git checkout -b k4 k3
+cd repo && git checkout -b task-04 task-03
 # read: agents/echo/agent.py, core/container.py, PATTERNS.md, agent_lab registry for extra_deps
 # write: ticket_triage/agents/classifier/{__init__,agent}.py, tests/unit/test_triage.py,
 #        tests/integration/test_classifier_agent_api.py
 uv run ruff format ticket_triage tests
 make lint && make test_unit && make test_integration
 git add -A && git commit -m "Add ticket_triage_classifier agent using the classifier service"
-git format-patch k3..k4 --stdout > ../out/k4.patch
-git checkout k3 && git apply --check ../out/k4.patch && git checkout k4
+git format-patch task-03..task-04 --stdout > ../out/task-04.patch
+git checkout task-03 && git apply --check ../out/task-04.patch && git checkout task-04
 cd .. && cat >> RESULTS.md <<'EOF'
 RESULT ...
 EOF
@@ -521,20 +521,20 @@ EOF
 Sample lines the lead should expect (counts are from the verified run; hashes are illustrative):
 
 ```
-RESULT 2026-11-05 09:24 UTC K1 Branch k1 from main (d0fc8a8); commit 5e1a9c2; out/k1.patch applies. With
+RESULT 2026-11-05 09:24 UTC task-01 Branch task-01 from main (d0fc8a8); commit 5e1a9c2; out/task-01.patch applies. With
 auth.enabled false no middleware sets scope["auth_context"] (agent_lab/app_factory.py setup_auth else-branch),
 and fastapi_keycloak_middleware 2.0.0's get_user raises 401 when it is missing
 (fastapi_keycloak_middleware/dependencies/principal.py:14-33); the framework expects None, which get_schema
 maps to "public" (agent_lab/infrastructure/auth/user.py:4-6). tests/integration/conftest.py now overrides
 get_user with None for the session. make test_integration 1/1, unit 5/5. Template issue: upstream's bake test
 runs without testcontainers, so it does not catch this.
-RESULT 2026-11-05 10:02 UTC K4 Branch k4 from k3; commit 81b0f4e; out/k4.patch applies. ClassifierAgent
+RESULT 2026-11-05 10:02 UTC task-04 Branch task-04 from task-03; commit 81b0f4e; out/task-04.patch applies. ClassifierAgent
 (ticket_triage/agents/classifier/agent.py:8-30) gets ticket_classifier through extra_deps, resolved off the
 container by name. Unit: registered and listed by /agents/types (no instantiation). Integration: /agents/create
 + /messages/post replies "billing" for a double charge. make test_unit 8/8, make test_integration 2/2.
-RESULT 2026-11-05 10:51 UTC K5 ... fake model returned; raising model -> fallback true; setting update changes
+RESULT 2026-11-05 10:51 UTC task-05 ... fake model returned; raising model -> fallback true; setting update changes
 the rendered prompt. Real-model routing unchecked.
-RESULT 2026-11-05 11:05 UTC K7 Memo in reports/K7/MEMO.md ...
+RESULT 2026-11-05 11:05 UTC task-07 Memo in reports/task-07/MEMO.md ...
 IDLE 2026-11-05 11:40 UTC
 ```
 
@@ -542,11 +542,11 @@ What to check in each RESULT line:
 
 | Look for | Red flag |
 |---|---|
-| Base and commit match the task's stacking | `from main` when the task said `from k3` |
+| Base and commit match the task's stacking | `from main` when the task said `from task-03` |
 | Test counts for unit **and** integration | Integration missing without "unchecked" |
 | file:line citations into `agent_lab` for framework claims | "Agent-Lab probably…" |
 | "unchecked" for real-LLM behaviour | A claim that the LLM routes correctly |
-| Patch applies | No `out/kN.patch`, or "applies" missing |
+| Patch applies | No `out/task-NN.patch`, or "applies" missing |
 
 ---
 
@@ -559,19 +559,19 @@ appended:
 > services are container providers, not module globals; routes resolve services from request.app.container;
 > unit tests do not instantiate agents; LLM tests use a fake model; prompts are agent settings, not literals.
 
-A typical review of K5 (`inputs/review-D003.md`) and the follow-up the lead appends:
+A typical review of task-05 (`inputs/review-task-05-1.md`) and the follow-up the lead appends:
 
 ```markdown
-## K5b (now; lead, 2026-11-05 13:10 UTC): the review's changes to K5
-inputs/review-D003.md asks: 1) the fallback swallows every exception; catch only the model call's errors and
+## task-05-fix1 (now; lead, 2026-11-05 13:10 UTC): the review's changes to task-05
+inputs/review-task-05-1.md asks: 1) the fallback swallows every exception; catch only the model call's errors and
 let a programming error fail the request; 2) response_data.fallback is missing when the model succeeds, so
 clients can't rely on it: always include it; 3) a test that the classify node runs once per turn (no second
-service call on resume). Same branch k5, one new commit. Re-export out/k5.patch; RESULT line saying how each
+service call on resume). Same branch task-05, one new commit. Re-export out/task-05.patch; RESULT line saying how each
 ask was met.
 ```
 
-Because k6 and k8 stack on k5, the lead either lands K5b first and asks for a rebase (`K6b: rebase k6 on the
-new k5, re-export`), or tells the reviewer to review the stack as a whole.
+Because task-06 and task-08 stack on task-05, the lead either lands task-05-fix1 first and asks for a rebase (`task-06-fix1: rebase task-06 on the
+new task-05, re-export`), or tells the reviewer to review the stack as a whole.
 
 ---
 
@@ -580,7 +580,7 @@ new k5, re-export`), or tells the reviewer to review the stack as a whole.
 ```bash
 cd ~/code/ticket-triage
 git checkout -b triage-api main
-for n in 1 2 3 4 5 6 8; do git am ~/agents/ticket-triage/out/k$n.patch; done
+for n in 1 2 3 4 5 6 8; do git am ~/agents/ticket-triage/out/task-0$n.patch; done
 
 uv sync --group dev --group test
 make lint test
@@ -603,7 +603,7 @@ integration and model (`/integrations/create`, `/llms/create`, `/agents/create`)
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| `KeyError: 'id'` in the echo integration test | 401 from `get_user` with auth disabled (middleware 2.x) | K1's `dependency_overrides` fixture |
+| `KeyError: 'id'` in the echo integration test | 401 from `get_user` with auth disabled (middleware 2.x) | task-01's `dependency_overrides` fixture |
 | Unit test fails with `connection refused` on 15432 | It instantiated an agent, which opens a Postgres pool | Assert registration or `/agents/types` in unit tests; test agents in integration |
 | Many `psycopg.pool ... connection refused` warnings during integration runs | The app is imported before the containers start; pools retry | Harmless; the tests pass once the containers are up |
 | `uv run` tries to reach PyPI | Environment not synced, or the lock changed | Lead runs `uv sync --frozen` in `repo/`; the agent keeps `UV_OFFLINE=1` |

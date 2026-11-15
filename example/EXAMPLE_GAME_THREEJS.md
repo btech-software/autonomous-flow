@@ -19,7 +19,7 @@ The visual and game-feel work is driven by a **gauntlet loop**:
 This example builds on two others:
 
 - [EXAMPLE_AGENT_LAB.md](EXAMPLE_AGENT_LAB.md) for everything about the Agent-Lab server: scaffold, offline
-  install, the K1 fix, and the patterns file.
+  install, the task-01 fix, and the patterns file.
 - The [README](../README.md) for the flow itself.
 
 This file adds the client, the gauntlet machinery and the game's task queue.
@@ -83,7 +83,7 @@ and that the lead can check afterwards:
 |---|---|
 | "AAA quality, every single thing" | A list of **gauntlet items**, one task each (lighting, environment, weapon, bots, VFX, HUD, feel, audio), plus a final whole-game gauntlet. Each item has a written rubric with anchored scores. |
 | "Fan out sub-agents, one per item" | Inside a task, the orchestrator splits the critic's top flaws into sub-items. It gives each one to a **builder subagent** working in its own git worktree, on its own branch and port. |
-| "/loop on each item" | A gauntlet task runs as a **self-paced `/loop`, one round per firing**. All round state is on disk in `reports/K<N>/GAUNTLET.md`, so a full context or a crash loses nothing. |
+| "/loop on each item" | A gauntlet task runs as a **self-paced `/loop`, one round per firing**. All round state is on disk in `reports/task-<NN>/GAUNTLET.md`, so a full context or a crash loses nothing. |
 | "A separate sub-agent checks it visually, a harsh critic" | A **fresh critic subagent every round**, at the highest reasoning effort available. It sees only images and the rubric: no code, no builder notes, no history. |
 | "Compare side by side, blind" | `blind.py` pairs candidate and champion frames under random A/B labels. The key is stored where the critic is told not to look. `judge.py` un-blinds the verdict. |
 | "Compare against the real AAA game" | Comparisons are against **reference frames the lead owns or has licensed**: concept paintovers or the lead's own target renders, never another game's screenshots. Counter-Attack plays like Counter-Strike but looks like itself. The bar is AAA *quality*, not a copy of someone's AAA *game*. |
@@ -95,13 +95,13 @@ flowchart TB
   subgraph Round["one /loop firing = one gauntlet round"]
     C0[capture champion frames] --> CR["critic (cold): ranked flaws"]
     CR --> SPLIT[orchestrator: top flaws to sub-items]
-    SPLIT --> B1[builder 1<br/>worktree kN-a, port 4201]
-    SPLIT --> B2[builder 2<br/>worktree kN-b, port 4202]
-    SPLIT --> B3[builder 3<br/>worktree kN-c, port 4203]
+    SPLIT --> B1[builder 1<br/>worktree task-NN-a, port 4201]
+    SPLIT --> B2[builder 2<br/>worktree task-NN-b, port 4202]
+    SPLIT --> B3[builder 3<br/>worktree task-NN-c, port 4203]
     B1 & B2 & B3 --> BL[blind.py: candidate vs champion]
     BL --> PANEL["critic panel x3 (cold, blind)"]
     PANEL --> J[judge.py: promote by majority]
-    J --> M[merge winners into kN, re-capture,<br/>blind-check the combination]
+    J --> M[merge winners into task-NN, re-capture,<br/>blind-check the combination]
     M --> G{"gate vs references:<br/>won every shot and every axis ≥ 9?"}
   end
   G -- no, under the cap --> NEXT[append the round to GAUNTLET.md; next firing]
@@ -114,26 +114,26 @@ flowchart TB
 
 | Task | Kind | Delivers |
 |---|---|---|
-| K1 | server | The scaffold's integration suite passing (the 401 fix from EXAMPLE_AGENT_LAB.md) |
-| K2 | server | `MatchStore` service and `POST /game/matches`, `GET /game/leaderboard` (in-memory) |
-| K3 | memo | Where matches should be persisted in Agent-Lab's Postgres/Redis, with file:line evidence |
-| K4 | server | `/live/ws` WebSocket for the round channel |
-| K5 | server | `counter_attack_tactician`: a LangGraph agent that calls the bot team's strategy and buys each round, with a deterministic fallback |
-| K6 | client | Game skeleton: capture contract, named shots, seeded RNG, FPS controller, Foundry blockout, round/economy rules, budgets |
-| K7 | client | Client ↔ server wiring: match submission, leaderboard screen, tactician over WebSocket with a local fallback |
-| K8 | client | Bots: navigation on Foundry, the plant/defuse objective, executing a tactician plan |
-| K10 | gauntlet G1 | Lighting, sky, shadows, post-processing |
-| K11 | gauntlet G2 | Environment: materials, geometry detail, set dressing |
-| K12 | gauntlet G3 | First-person weapon: viewmodel, animation, recoil, muzzle |
-| K13 | gauntlet G4 | Player models for both factions: models, animation, hit reactions, death |
-| K14 | gauntlet G5 | VFX: tracers, impacts, smoke, decals, explosions |
-| K15 | gauntlet G6 | HUD, buy menu, scoreboard and menus |
-| K16 | gauntlet G7 | Movement and gunplay feel: counter-strafing, spray patterns (numeric tests and frame strips; the lead playtests) |
-| K17 | non-visual | Audio: mixing, spatialisation, loudness checks (the critic can't hear; the lead listens) |
-| K18 | gauntlet G8 | Whole-game gauntlet: every shot, full frames, against the references, within performance budgets |
-| K19 | docs | README, controls, credits, how to run the gauntlet again |
+| task-01 | server | The scaffold's integration suite passing (the 401 fix from EXAMPLE_AGENT_LAB.md) |
+| task-02 | server | `MatchStore` service and `POST /game/matches`, `GET /game/leaderboard` (in-memory) |
+| task-03 | memo | Where matches should be persisted in Agent-Lab's Postgres/Redis, with file:line evidence |
+| task-04 | server | `/live/ws` WebSocket for the round channel |
+| task-05 | server | `counter_attack_tactician`: a LangGraph agent that calls the bot team's strategy and buys each round, with a deterministic fallback |
+| task-06 | client | Game skeleton: capture contract, named shots, seeded RNG, FPS controller, Foundry blockout, round/economy rules, budgets |
+| task-07 | client | Client ↔ server wiring: match submission, leaderboard screen, tactician over WebSocket with a local fallback |
+| task-08 | client | Bots: navigation on Foundry, the plant/defuse objective, executing a tactician plan |
+| task-10 | gauntlet G1 | Lighting, sky, shadows, post-processing |
+| task-11 | gauntlet G2 | Environment: materials, geometry detail, set dressing |
+| task-12 | gauntlet G3 | First-person weapon: viewmodel, animation, recoil, muzzle |
+| task-13 | gauntlet G4 | Player models for both factions: models, animation, hit reactions, death |
+| task-14 | gauntlet G5 | VFX: tracers, impacts, smoke, decals, explosions |
+| task-15 | gauntlet G6 | HUD, buy menu, scoreboard and menus |
+| task-16 | gauntlet G7 | Movement and gunplay feel: counter-strafing, spray patterns (numeric tests and frame strips; the lead playtests) |
+| task-17 | non-visual | Audio: mixing, spatialisation, loudness checks (the critic can't hear; the lead listens) |
+| task-18 | gauntlet G8 | Whole-game gauntlet: every shot, full frames, against the references, within performance budgets |
+| task-19 | docs | README, controls, credits, how to run the gauntlet again |
 
-K9 is left free for a follow-up the lead may want to insert before the gauntlets.
+task-09 is left free for a follow-up the lead may want to insert before the gauntlets.
 
 ---
 
@@ -186,7 +186,7 @@ mv counter-attack server
 (cd server && uv lock && uv sync --group dev --group test && make lint test_unit)
 ```
 
-The fresh scaffold's integration suite fails with a 401, the same as in the Agent-Lab example. That becomes K1.
+The fresh scaffold's integration suite fails with a 401, the same as in the Agent-Lab example. That becomes task-01.
 
 ### 0.3 Client
 
@@ -203,7 +203,7 @@ printf 'node_modules/\ndist/\n' > .gitignore
 Node 22's `node --test` needs the quoted glob. A bare directory argument fails with `MODULE_NOT_FOUND`.
 
 **The capture contract.** Every gauntlet comparison depends on the game rendering *exactly* the same frame
-for the same URL. Capture mode is part of the game, and K6 must keep this contract. A minimal working
+for the same URL. Capture mode is part of the game, and task-06 must keep this contract. A minimal working
 `src/main.js` that keeps it (the blockout below) looks like this:
 
 ```js
@@ -325,7 +325,7 @@ for t in 0 0.05 0.1 0.15 0.2 0.25; do T=$t npm run capture -- ../caps/strip-$t w
 python3 tools/gauntlet/blind.py <baseline_dir> <candidate_dir> <pairs_dir> <key_file>
 
 The critic sees only <pairs_dir>. <key_file> records which side is the candidate
-and must live where the critic is told not to look (reports/K<N>/keys/).
+and must live where the critic is told not to look (reports/task-<NN>/keys/).
 """
 
 import json
@@ -478,7 +478,7 @@ docker pull hashicorp/vault:1.18.1; docker pull testcontainers/ryuk:0.8.1
 
 # smoke test, with the network off: must print stats and write two PNGs
 (cd repo/client && PLAYWRIGHT_BROWSERS_PATH=$PWD/../../.pw-browsers \
-   npm run capture -- ../../reports/K0/baseline site_a_dusk mid_low && npm test)
+   npm run capture -- ../../reports/task-00/baseline site_a_dusk mid_low && npm test)
 
 # raw assets and framework notes
 mkdir -p inputs/assets inputs/agent-lab
@@ -496,8 +496,8 @@ can't break the agent's captures. If the browser is missing, Playwright prints
 parallel on ports 4201 and 4202, and both produced the same hash:
 
 ```bash
-git -C repo worktree add ../wt/k10-fog -b k10-fog k10
-ln -s ../../../repo/client/node_modules wt/k10-fog/client/node_modules
+git -C repo worktree add ../wt/task-10-fog -b task-10-fog task-10
+ln -s ../../../repo/client/node_modules wt/task-10-fog/client/node_modules
 ```
 
 ---
@@ -559,7 +559,7 @@ Workspace: this folder. repo/ is a local copy of main with no remote. Write only
 - Stop when the gate passes, or at the task's round cap, or after two rounds with no promotion. Then deliver
   the champion as usual and state in the RESULT line whether the gate passed, the last judge.py lines, and
   what the critics still flag.
-- Builder branches are kept for audit (k<N>-<item>); remove their worktrees after the round.
+- Builder branches are kept for audit (task-<NN>-<item>); remove their worktrees after the round.
 ```
 
 ### `inputs/CRITIC.md`: the critic's standing prompt
@@ -596,29 +596,29 @@ the AAA impression. Each flaw names the shot and the area of the frame. The outp
 ### `inputs/GAUNTLET_ROUND.md`: what one round does
 
 ```markdown
-One gauntlet round for task K<N> (read the task for: item, shots, rubric table, round cap, gate).
-State: reports/K<N>/GAUNTLET.md. Champion: branch k<N> (created from the task's base in round 1).
+One gauntlet round for task-<NN> (read the task for: item, shots, rubric table, round cap, gate).
+State: reports/task-<NN>/GAUNTLET.md. Champion: branch task-<NN> (created from the task's base in round 1).
 
 1. Read the tail of GAUNTLET.md. If it says DONE, append IDLE-for-this-task to it and stop this firing.
-2. Capture the champion: npm run capture -- ../../reports/K<N>/r<R>/champion <shots>. Check stats.json
+2. Capture the champion: npm run capture -- ../../reports/task-<NN>/r<R>/champion <shots>. Check stats.json
    against art/BUDGETS.md and that errors is empty.
 3. Flaw pass: start one fresh critic subagent with inputs/CRITIC.md (flaw mode), the rubric table and
-   reports/K<N>/r<R>/champion/*.png. It writes reports/K<N>/r<R>/critique.md.
+   reports/task-<NN>/r<R>/champion/*.png. It writes reports/task-<NN>/r<R>/critique.md.
 4. Take the top 3 flaws that are within this task's item. For each, start one builder subagent in its own
-   worktree (git worktree add ../wt/k<N>-<slug> -b k<N>-<slug> k<N>; symlink node_modules; PORT=4200+i).
+   worktree (git worktree add ../wt/task-<NN>-<slug> -b task-<NN>-<slug> task-<NN>; symlink node_modules; PORT=4200+i).
    A builder gets: the flaw text, BRIEF.md's client rules, art/BIBLE.md, the files likely involved, the
    budgets. It must: change only what the flaw needs, run npm test, capture the task's shots into
-   reports/K<N>/r<R>/<slug>/, keep within budget, commit once on its branch, and report in 5 lines.
+   reports/task-<NN>/r<R>/<slug>/, keep within budget, commit once on its branch, and report in 5 lines.
    Builders never see critique scores for other flaws, the keys, or the references.
 5. For each builder with green tests, no page errors and in budget:
-   blind.py champion <slug> reports/K<N>/r<R>/pairs-<slug> reports/K<N>/keys/r<R>-<slug>.json
+   blind.py champion <slug> reports/task-<NN>/r<R>/pairs-<slug> reports/task-<NN>/keys/r<R>-<slug>.json
    Start three fresh critics on pairs-<slug>, each writing its own verdict-<slug>-<c>.json.
    judge.py on each; the candidate is promoted if at least two of three print PROMOTE.
-6. Merge every promoted branch into k<N> (git merge --no-ff; on a conflict, keep the first and drop the
+6. Merge every promoted branch into task-<NN> (git merge --no-ff; on a conflict, keep the first and drop the
    later one for this round). If more than one merged, capture again and run step 5 with "combined" vs
-   the round's champion; if it loses, reset k<N> to the best single promotion (git reset only on k<N>,
+   the round's champion; if it loses, reset task-<NN> to the best single promotion (git reset only on task-<NN>,
    only to a commit made in this round).
-7. Gate: blind.py repo/art/refs reports/K<N>/r<R>/final reports/K<N>/r<R>/pairs-ref keys/r<R>-ref.json,
+7. Gate: blind.py repo/art/refs reports/task-<NN>/r<R>/final reports/task-<NN>/r<R>/pairs-ref keys/r<R>-ref.json,
    three fresh critics, judge.py --gate 9 on each. Gate passes if at least two of three print GATE PASS.
 8. Append one row to GAUNTLET.md:
    | r<R> | flaws tried | promoted | panel votes | gate votes | lowest axis | budgets (calls/tris) |
@@ -635,11 +635,11 @@ The server and skeleton tasks are ordinary flow tasks. The gauntlet tasks name t
 table, round cap and gate. Everything else is in `GAUNTLET_ROUND.md`.
 
 ```markdown
-## K1 (now; lead, 2026-11-09 09:00 UTC): the server's integration suite fails with 401
-As K1 in EXAMPLE_AGENT_LAB.md, in repo/server. Branch k1 from main. RESULT line.
+## task-01 (now; lead, 2026-11-09 09:00 UTC): the server's integration suite fails with 401
+As task-01 in EXAMPLE_AGENT_LAB.md, in repo/server. Branch task-01 from main. RESULT line.
 
-## K2 (after K1; lead, 2026-11-09 09:00 UTC): matches and leaderboard API
-Branch k2 from k1. A MatchStore service on the container (in-memory for now, behind a small interface:
+## task-02 (after task-01; lead, 2026-11-09 09:00 UTC): matches and leaderboard API
+Branch task-02 from task-01. A MatchStore service on the container (in-memory for now, behind a small interface:
 add(match) -> id, top(n) -> list). Routes via RouterMount at /game:
 POST /game/matches {player: str 1-24 chars, seed: int, side: "attackers"|"defenders", rounds_won: 0-13,
 rounds_lost: 0-13, kills: int >= 0, deaths: int >= 0, headshots: int >= 0, plants: int >= 0, defuses: int >= 0}
@@ -648,14 +648,14 @@ Rating = round wins * 100 + kills * 10 + headshots * 5 + (plants + defuses) * 25
 (422): neither side at 13 and the total under 24, both at 13, headshots > kills, kills > 5 * total rounds.
 Unit tests for the service and both routes (no Postgres). RESULT line.
 
-## K3 (now, read-only; lead, 2026-11-09 09:00 UTC): where should matches be persisted?
+## task-03 (now, read-only; lead, 2026-11-09 09:00 UTC): where should matches be persisted?
 No code. Read the Agent-Lab sources in repo/server/.venv and the template's config: which Postgres
 databases, Redis access and migrations exist, and how an extra service would reach them. Write
-reports/K3/MEMO.md: two options with file:line evidence, the test story for each under testcontainers, and a
+reports/task-03/MEMO.md: two options with file:line evidence, the test story for each under testcontainers, and a
 recommendation. RESULT line.
 
-## K4 (after K2; lead, 2026-11-09 09:00 UTC): the round channel
-Branch k4 from k2. WebSocket at /live/ws via RouterMount (pattern below). Messages are JSON with a seq:
+## task-04 (after task-02; lead, 2026-11-09 09:00 UTC): the round channel
+Branch task-04 from task-02. WebSocket at /live/ws via RouterMount (pattern below). Messages are JSON with a seq:
 client -> {"seq", "type": "round_end", "round", "score": [a, d], "bot_side", "bank": [5 ints],
 "telemetry": {winner, how: "elimination"|"detonation"|"defuse"|"time", plant_site, player_route: [zones],
 player_kills_by_zone, utility_used}};
@@ -666,8 +666,8 @@ force, eco by fixed thresholds); strategy is picked from a fixed list by the las
 (attack: rush, split, default, fake; defence: stack, standard, retake). Unit tests with
 TestClient.websocket_connect. RESULT line.
 
-## K5 (after K4; lead, 2026-11-09 09:00 UTC): counter_attack_tactician agent
-Branch k5 from k4. An LLM-backed LangGraph agent (WorkflowAgentBase, like the template's react_agent): the
+## task-05 (after task-04; lead, 2026-11-09 09:00 UTC): counter_attack_tactician agent
+Branch task-05 from task-04. An LLM-backed LangGraph agent (WorkflowAgentBase, like the template's react_agent): the
 bots' in-game leader. It takes the round history, the banks and the Playbook's plan and returns an adjusted
 plan in a strict JSON schema (strategy and site from the fixed lists, a role per bot, a buy per bot that the
 bank can afford), plus one radio call (<= 80 chars, original wording). Validate the output; anything invalid
@@ -676,8 +676,8 @@ or slower than the configured timeout (default 300 ms) falls back to the Playboo
 (PATTERNS.md) for a valid plan, an unaffordable buy, an unknown site, and a timeout. Real-model behaviour is
 unchecked. RESULT line.
 
-## K6 (now; lead, 2026-11-09 09:00 UTC): game skeleton
-Branch k6 from main (client only). Keep the capture contract and the existing shots. Add, each with
+## task-06 (now; lead, 2026-11-09 09:00 UTC): game skeleton
+Branch task-06 from main (client only). Keep the capture contract and the existing shots. Add, each with
 node --test tests:
 - src/game/movement.js: walk/run/crouch speeds, acceleration, friction and stop time (a counter-strafe
   stops you in <= 80 ms), jump apex; a speed penalty per weapon weight.
@@ -690,11 +690,11 @@ node --test tests:
 Plus: a first-person controller using those modules (pointer lock, WASD, walk on Shift, crouch, jump); a
 blockout of Foundry (A site, B site, mid, connectors, both spawns) at real-world scale; shots b_site_wide,
 a_ramp_high, weapon_fire (camera at eye height, weapon in view); placeholder weapons and capsule bots; a
-stats overlay (toggle F3, off in capture mode). Capture all shots into reports/K6/frames/ and list their
+stats overlay (toggle F3, off in capture mode). Capture all shots into reports/task-06/frames/ and list their
 stats. RESULT line.
 
-## K7 (after K6, K5; lead, 2026-11-09 09:00 UTC): client <-> server
-Branch k7 from k6, then merge k5 into it (commit the merge). client/src/net/: submit the match at match
+## task-07 (after task-06, task-05; lead, 2026-11-09 09:00 UTC): client <-> server
+Branch task-07 from task-06, then merge task-05 into it (commit the merge). client/src/net/: submit the match at match
 end, leaderboard screen, tactician over /live/ws during the end-of-round pause. The client never waits on the
 server: if no round_plan arrives within 300 ms it uses a local copy of the Playbook rules and says so in
 the stats overlay. Vite dev/preview
@@ -702,71 +702,71 @@ proxy: /api -> http://127.0.0.1:18000 (compose.yml's app port), ws included. Tes
 fallback timing with a fake socket; a Playwright test against vite preview with page.route mocking the
 server (no real server in the agent's environment). End-to-end with the real server is unchecked. RESULT line.
 
-## K8 (after K7; lead, 2026-11-09 09:00 UTC): bots
-Branch k8 from k7. src/bots/: a navigation graph for Foundry (zones and links, baked from the blockout),
+## task-08 (after task-07; lead, 2026-11-09 09:00 UTC): bots
+Branch task-08 from task-07. src/bots/: a navigation graph for Foundry (zones and links, baked from the blockout),
 movement along it, the objective (carry, plant and defuse the charge), simple combat (reaction time,
 aim error by skill level, using the same accuracy and spray modules as the player), and executing a
 round_plan (strategy, site, roles, buys). Tests with node --test: a full round of 5 bots vs 5 bots runs to
 an end with a fixed seed and gives the same result twice; an attacker team with a "rush B" plan reaches
 B first; bots never buy what they cannot afford. Add shot bots_b_rush at a fixed t. RESULT line.
 
-## K10 (after K8; lead, 2026-11-09 09:00 UTC): gauntlet G1, lighting, sky and post
-Gauntlet. Base k8, branch k10. Item: lighting, sky, shadows, exposure, post-processing; no geometry or
+## task-10 (after task-08; lead, 2026-11-09 09:00 UTC): gauntlet G1, lighting, sky and post
+Gauntlet. Base task-08, branch task-10. Item: lighting, sky, shadows, exposure, post-processing; no geometry or
 material changes beyond what light needs. Shots: site_a_dusk, mid_low, b_site_wide, a_ramp_high.
 Rubric: art/RUBRIC.md "G1". Round cap 8. Gate 9 against art/refs. Run with the gauntlet
 /loop (PROMPTS below). RESULT line when DONE.
 
-## K11 (after K10; ...): gauntlet G2, environment
-Gauntlet. Base k10, branch k11. Item: materials (PBR from inputs/assets), geometry detail, trim and
+## task-11 (after task-10; ...): gauntlet G2, environment
+Gauntlet. Base task-10, branch task-11. Item: materials (PBR from inputs/assets), geometry detail, trim and
 decals, set dressing, sightline readability (see BIBLE.md). Shots: the four above. Rubric "G2". Round cap 10. Gate 9.
 
-## K12 (after K11; ...): gauntlet G3, first-person weapon
-Gauntlet. Base k11, branch k12. Item: viewmodel model and materials, idle sway, ADS, fire/recoil
+## task-12 (after task-11; ...): gauntlet G3, first-person weapon
+Gauntlet. Base task-11, branch task-12. Item: viewmodel model and materials, idle sway, ADS, fire/recoil
 animation, muzzle flash, shell ejection, inspect. One rifle per side, the pistol and the sniper rifle.
 Shots: weapon_fire as a frame strip at t = 0, 0.033, 0.066, 0.1, 0.15, 0.25 (capture each into
 r<R>/<who>/weapon_fire_t<t>.png), plus weapon_scope. Rubric "G3". Cap 10.
 Gate 9; the reference for each strip frame is art/refs/weapon_fire_t<t>.png.
 
-## K13 (after K12; ...): gauntlet G4, player models
-Gauntlet. Base k12, branch k13. Item: Attacker and Defender models (rigged, from inputs/assets), materials,
+## task-13 (after task-12; ...): gauntlet G4, player models
+Gauntlet. Base task-12, branch task-13. Item: Attacker and Defender models (rigged, from inputs/assets), materials,
 team readability at range, locomotion, plant/defuse and hit/death animation via AnimationMixer at fixed
 times. Shots: attacker_close, defender_close, hit_strip, readability_long (a head at 40 m against the
 darkest wall).
 Rubric "G4". Cap 10. Gate 9.
 
-## K14 (after K13; ...): gauntlet G5, VFX
-Gauntlet. Base k13, branch k14. Item: tracers, impacts per surface, smoke, sparks, decals, explosion.
+## task-14 (after task-13; ...): gauntlet G5, VFX
+Gauntlet. Base task-13, branch task-14. Item: tracers, impacts per surface, smoke, sparks, decals, explosion.
 Shots: impact_concrete (strip), impact_metal (strip), smoke_mid (strip), flash_a (strip), charge_detonation (strip). Rubric "G5". Cap 10. Gate 9.
 
-## K15 (after K14; ...): gauntlet G6, HUD and menus
-Gauntlet. Base k14, branch k15. Item: HUD (health, armour, ammo, money, round timer, team
+## task-15 (after task-14; ...): gauntlet G6, HUD and menus
+Gauntlet. Base task-14, branch task-15. Item: HUD (health, armour, ammo, money, round timer, team
 alive counts, charge status, kill feed, radio call), crosshair, buy menu, scoreboard, main menu, leaderboard
 screen. Original layout per BIBLE.md. Shots: hud_combat, buy_menu, scoreboard, menu_main, leaderboard. Rubric "G6".
 Cap 6. Gate 9.
 
-## K16 (after K15; ...): gauntlet G7, movement and combat feel
+## task-16 (after task-15; ...): gauntlet G7, movement and combat feel
 Gauntlet with numeric checks first: counter-strafe stop time, first-shot accuracy, spray patterns and
 recovery must meet art/BUDGETS.md "feel" targets in node --test before any capture. Shots: strafe_strip,
 spray_wall (30 bullets on a wall at 10 m, showing the pattern), recoil_strip. Rubric "G7". Cap 6. Gate 9.
 Mark in the RESULT line that feel is unchecked until the lead playtests.
 
-## K17 (after K16; ...): audio
+## task-17 (after task-16; ...): audio
 Not a gauntlet (the critic cannot hear). Spatialised weapon, footstep (by surface, audible through walls as in competitive shooters), impact, charge beep and ambience sound from
 inputs/assets via THREE.PositionalAudio; a mixer with buses. Checks: node --test on the mixer rules; a
 script that decodes every sound file and reports peak and duration, nothing clipping. Everything audible is
 unchecked. RESULT line.
 
-## K18 (after K17; ...): gauntlet G8, the whole game
-Gauntlet. Base k17, branch k18. Item: anything that most hurts the whole-frame impression, across all
+## task-18 (after task-17; ...): gauntlet G8, the whole game
+Gauntlet. Base task-17, branch task-18. Item: anything that most hurts the whole-frame impression, across all
 items. Shots: every shot in src/shots. Rubric "G8". Cap 12. Gate 9 and every shot within budget.
 In this task the flaw pass may pick flaws from any item.
 
-## K19 (after K18; ...): docs
-Branch k19 from k18. README (run, controls, architecture, how to rerun a gauntlet), CREDITS check against
+## task-19 (after task-18; ...): docs
+Branch task-19 from task-18. README (run, controls, architecture, how to rerun a gauntlet), CREDITS check against
 every file in client/public/assets. RESULT line.
 ```
 
-### Server pattern added for K4: WebSocket routes
+### Server pattern added for task-04: WebSocket routes
 
 Verified on Agent-Lab 1.17.12. A WebSocket route mounts like any other extra router, and works in unit tests
 without an auth header when auth is disabled. With auth enabled, behaviour is unchecked.
@@ -832,7 +832,7 @@ claude
 
 > Read BRIEF.md, TASKS.md and RESULTS.md in this folder, and inputs/agent-lab/PATTERNS.md, then work the first
 > task with no RESULT or BLOCKED line, under BRIEF.md. Continue through the queue without stopping. When you
-> reach a task marked "Gauntlet", stop and append `GAUNTLET-READY <UTC> K<N>` to RESULTS.md.
+> reach a task marked "Gauntlet", stop and append `GAUNTLET-READY <UTC> task-<NN>` to RESULTS.md.
 
 ### The gauntlet tasks
 
@@ -854,7 +854,7 @@ output is checked anyway.
 ### What one round looks like on disk
 
 ```
-reports/K10/
+reports/task-10/
   GAUNTLET.md                       the ledger: one row per round, DONE at the end
   keys/r3-fog.json, r3-ref.json     blind keys; never shown to critics
   r3/
@@ -870,10 +870,10 @@ reports/K10/
 Branches after round 3:
 
 ```
-k10            champion (merge commits of promoted builder branches)
-k10-fog        promoted in r3, merged
-k10-shadow-acne  lost 1/3 in r3, kept for audit
-k10-bloom      promoted in r3, merged; combined check won 3/3
+task-10            champion (merge commits of promoted builder branches)
+task-10-fog        promoted in r3, merged
+task-10-shadow-acne  lost 1/3 in r3, kept for audit
+task-10-bloom      promoted in r3, merged; combined check won 3/3
 ```
 
 ### Why the critic must not be the orchestrator
@@ -892,7 +892,7 @@ enough to run many rounds.
 
 ## Phase 5: reading the results
 
-A gauntlet ledger after the loop stopped (`reports/K10/GAUNTLET.md`):
+A gauntlet ledger after the loop stopped (`reports/task-10/GAUNTLET.md`):
 
 ```
 | round | flaws tried                         | promoted         | panel votes      | gate votes | lowest axis      | calls/tris    |
@@ -907,9 +907,9 @@ DONE r7: gate passed 2/3 (critic 3: mid_low lost to reference, "shaft noise on t
 A RESULT line for it:
 
 ```
-RESULT 2026-11-11 03:12 UTC K10 Branch k10 from k7; 11 commits (7 promotions, 4 merges); out/k10.patch
+RESULT 2026-11-11 03:12 UTC task-10 Branch task-10 from task-07; 11 commits (7 promotions, 4 merges); out/task-10.patch
 applies. Gate passed in r7 (2/3 critics: candidate beat the references in all 4 shots, lowest axis 9);
-critic 3 still flags shaft noise in mid_low (reports/K10/r7/verdict-ref-3.json). Within budget on every
+critic 3 still flags shaft noise in mid_low (reports/task-10/r7/verdict-ref-3.json). Within budget on every
 shot (max 212 calls, 1.9M tris). npm test 14/14. Real-GPU look and frame rate unchecked.
 ```
 
@@ -918,8 +918,8 @@ Possible endings and what the lead does with each:
 | Ending | Lead's action |
 |---|---|
 | Gate passed 3/3 | Look at `final/*.png` beside `refs/`, play it on a real GPU, review the patch, land |
-| Gate passed 2/3 | Same, plus decide whether the dissenting flaw deserves a `K10b` |
-| Round cap reached, gate failed | Read the last `critique.md`. Usually it's an asset problem the agent can't fix offline (needs a better HDRI, a real model). Supply the asset, then queue `K10b` with a cap of 4 |
+| Gate passed 2/3 | Same, plus decide whether the dissenting flaw deserves a `task-10-fix1` |
+| Round cap reached, gate failed | Read the last `critique.md`. Usually it's an asset problem the agent can't fix offline (needs a better HDRI, a real model). Supply the asset, then queue `task-10-fix1` with a cap of 4 |
 | Plateau (two rounds, no promotion) | The builders are stuck. Check that the rubric anchors are achievable and that the flaws are within the item's scope |
 | Budgets blocked every candidate | The budget or the shot is wrong for the item. Adjust `BUDGETS.md` yourself (the agent may not) |
 
@@ -948,11 +948,11 @@ Reviewing a gauntlet patch differs from reviewing an ordinary one:
 A follow-up after the playtest:
 
 ```markdown
-## K10b (now; lead, 2026-11-11 10:00 UTC): the review's changes to K10
-inputs/review-D014.md asks: 1) the volumetric shafts shimmer when the camera moves (stills can't see it):
+## task-10-fix1 (now; lead, 2026-11-11 10:00 UTC): the review's changes to task-10
+inputs/review-task-10-1.md asks: 1) the volumetric shafts shimmer when the camera moves (stills can't see it):
 make them temporally stable, add shot mid_pan as a 6-frame strip at 1/30 s steps; 2) the SSAO pass is
 enabled only in capture mode (main.js:212); enable it in play mode or remove it from capture. Same branch
-k10. Gauntlet with cap 4 on shots mid_low, mid_pan; gate 9. Re-export out/k10.patch; RESULT line saying
+task-10. Gauntlet with cap 4 on shots mid_low, mid_pan; gate 9. Re-export out/task-10.patch; RESULT line saying
 how each ask was met.
 ```
 
@@ -964,17 +964,17 @@ Patches with binary assets can be large. Two ways to land:
 
 ```bash
 # A) patches, as in the rest of the flow
-cd ~/code/counter-attack && git checkout -b land-k10 main && git am ~/agents/counter-attack/out/k10.patch
+cd ~/code/counter-attack && git checkout -b land-task-10 main && git am ~/agents/counter-attack/out/task-10.patch
 
 # B) for asset-heavy branches: fetch straight from the workspace clone (local, no network)
-git fetch ~/agents/counter-attack/repo k10:land-k10
+git fetch ~/agents/counter-attack/repo task-10:land-task-10
 ```
 
 Then run the server and the client together:
 
 ```bash
 (cd server && make test_integration && docker compose up -d --build)   # API on :18000
-(cd client && npm run build && npx vite preview)                      # proxies /api to :18000 (K7)
+(cd client && npm run build && npx vite preview)                      # proxies /api to :18000 (task-07)
 ```
 
 Open the preview URL on a machine with a GPU, play a full match against the bots, check the leaderboard and
