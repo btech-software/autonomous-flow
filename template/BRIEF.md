@@ -35,7 +35,7 @@ Workspace: this folder. repo/ is a local copy of <BASE BRANCH> with no remote. W
   on hold, in the order its header gives (`now`, `next`, `after task-<NN>`).
 - When a task is done, write the report it asks for under reports/<task id>/, then append one line to RESULTS.md:
   `RESULT <UTC time> <task id> #<issue> <branch, base and commit; patch path; three or four sentences with file:line
-  evidence>`. Then start the next task in the same session.
+  evidence>`. Leave out `#<issue>` when the task has none. Then start the next task in the same session.
 - When none is left, append `IDLE <UTC time>` and wait. If you are blocked, append
   `BLOCKED <UTC time> <task id> <why, what you tried>` and go on to the next task.
 - Append to RESULTS.md with `cat >> RESULTS.md <<'EOF'`; never rewrite earlier lines.

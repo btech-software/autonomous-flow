@@ -143,7 +143,7 @@ Then it writes the report the task asks for:
 - `REVIEW.md` for a review, with a verdict of **LAND**, **CHANGES** or **HOLD**
 - `MEMO.md` for investigation-only tasks
 
-Finally it appends one line to RESULTS.md:
+Finally it appends one line to RESULTS.md. The `#<issue>` field is left out when the task has no issue:
 
 ```
 RESULT 2026-03-02 15:40 UTC task-07 #123 Branch task-07 from main (a1b2c3d); commit e4f5a6b; out/task-07.patch

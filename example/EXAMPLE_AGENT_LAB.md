@@ -409,7 +409,8 @@ Check registration with `tool_registration.registered_tools()`, as `tests/unit/t
 
 ## Phase 3: the task queue
 
-The lead appends these to `TASKS.md`, all at once or a few at a time. Each one is self-contained.
+The lead appends these to `TASKS.md`, all at once or a few at a time. Each one is self-contained. This example
+writes the queue by hand (README step 1), so GOAL.md stays as the template and the brief has no Planning section.
 
 ```markdown
 ## task-01 (now; lead, 2026-11-05 09:00 UTC): the scaffold's integration suite fails with 401
@@ -550,7 +551,7 @@ What to check in each RESULT line:
 
 ---
 
-## Phase 6: review and follow-ups
+## Phase 6: review and fix tasks
 
 Run the reviewer prompt from PROMPTS.md in a separate session for each patch, with an Agent-Lab checklist
 appended:
@@ -559,7 +560,7 @@ appended:
 > services are container providers, not module globals; routes resolve services from request.app.container;
 > unit tests do not instantiate agents; LLM tests use a fake model; prompts are agent settings, not literals.
 
-A typical review of task-05 (`inputs/review-task-05-1.md`) and the follow-up the lead appends:
+A typical review of task-05 (`inputs/review-task-05-1.md`) and the fix task the lead appends:
 
 ```markdown
 ## task-05-fix1 (now; lead, 2026-11-05 13:10 UTC): the review's changes to task-05

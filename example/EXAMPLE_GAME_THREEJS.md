@@ -133,7 +133,7 @@ flowchart TB
 | task-18 | gauntlet G8 | Whole-game gauntlet: every shot, full frames, against the references, within performance budgets |
 | task-19 | docs | README, controls, credits, how to run the gauntlet again |
 
-task-09 is left free for a follow-up the lead may want to insert before the gauntlets.
+task-09 is left free for a task the lead may want to insert by hand before the gauntlets.
 
 ---
 
@@ -496,7 +496,7 @@ can't break the agent's captures. If the browser is missing, Playwright prints
 parallel on ports 4201 and 4202, and both produced the same hash:
 
 ```bash
-git -C repo worktree add ../wt/task-10-fog -b task-10-fog task-10
+git -C repo worktree add ../wt/task-10-fog -b gauntlet/task-10-fog task-10
 ln -s ../../../repo/client/node_modules wt/task-10-fog/client/node_modules
 ```
 
@@ -559,7 +559,9 @@ Workspace: this folder. repo/ is a local copy of main with no remote. Write only
 - Stop when the gate passes, or at the task's round cap, or after two rounds with no promotion. Then deliver
   the champion as usual and state in the RESULT line whether the gate passed, the last judge.py lines, and
   what the critics still flag.
-- Builder branches are kept for audit (task-<NN>-<item>); remove their worktrees after the round.
+- Work a gauntlet task only in a gauntlet session (the /loop prompt in Phase 4). In any other session, skip it
+  like a task on hold.
+- Builder branches are kept for audit (gauntlet/task-<NN>-<item>); remove their worktrees after the round.
 ```
 
 ### `inputs/CRITIC.md`: the critic's standing prompt
@@ -605,7 +607,7 @@ State: reports/task-<NN>/GAUNTLET.md. Champion: branch task-<NN> (created from t
 3. Flaw pass: start one fresh critic subagent with inputs/CRITIC.md (flaw mode), the rubric table and
    reports/task-<NN>/r<R>/champion/*.png. It writes reports/task-<NN>/r<R>/critique.md.
 4. Take the top 3 flaws that are within this task's item. For each, start one builder subagent in its own
-   worktree (git worktree add ../wt/task-<NN>-<slug> -b task-<NN>-<slug> task-<NN>; symlink node_modules; PORT=4200+i).
+   worktree (git worktree add ../wt/task-<NN>-<slug> -b gauntlet/task-<NN>-<slug> task-<NN>; symlink node_modules; PORT=4200+i).
    A builder gets: the flaw text, BRIEF.md's client rules, art/BIBLE.md, the files likely involved, the
    budgets. It must: change only what the flaw needs, run npm test, capture the task's shots into
    reports/task-<NN>/r<R>/<slug>/, keep within budget, commit once on its branch, and report in 5 lines.
@@ -831,13 +833,14 @@ claude
 ```
 
 > Read BRIEF.md, TASKS.md and RESULTS.md in this folder, and inputs/agent-lab/PATTERNS.md, then work the first
-> task with no RESULT or BLOCKED line, under BRIEF.md. Continue through the queue without stopping. When you
-> reach a task marked "Gauntlet", stop and append `GAUNTLET-READY <UTC> task-<NN>` to RESULTS.md.
+> task with no RESULT or BLOCKED line, under BRIEF.md. Continue through the queue without stopping. Skip tasks
+> marked "Gauntlet": they run in their own session. When only those are left, poll as when idle.
 
 ### The gauntlet tasks
 
 Each gauntlet task runs in its **own session** as a self-paced loop. Every firing is one round. The session
-can be replaced at any time, because round state lives in `GAUNTLET.md`.
+can be replaced at any time, because round state lives in `GAUNTLET.md`. Start one when the ordinary session
+logs IDLE and the next task in order is a gauntlet.
 
 ```bash
 cd ~/agents/counter-attack && claude
@@ -870,10 +873,10 @@ reports/task-10/
 Branches after round 3:
 
 ```
-task-10            champion (merge commits of promoted builder branches)
-task-10-fog        promoted in r3, merged
-task-10-shadow-acne  lost 1/3 in r3, kept for audit
-task-10-bloom      promoted in r3, merged; combined check won 3/3
+task-10                       champion (merge commits of promoted builder branches)
+gauntlet/task-10-fog          promoted in r3, merged
+gauntlet/task-10-shadow-acne  lost 1/3 in r3, kept for audit
+gauntlet/task-10-bloom        promoted in r3, merged; combined check won 3/3
 ```
 
 ### Why the critic must not be the orchestrator
@@ -928,7 +931,7 @@ good. If the critics and your eyes disagree, your eyes win, and the rubric ancho
 
 ---
 
-## Phase 6: review and follow-ups
+## Phase 6: review and fix tasks
 
 Reviewing a gauntlet patch differs from reviewing an ordinary one:
 
@@ -945,7 +948,7 @@ Reviewing a gauntlet patch differs from reviewing an ordinary one:
 - **Playtest on a real GPU,** looking for what stills can't show: shimmering, temporal aliasing, frame pacing,
   input latency.
 
-A follow-up after the playtest:
+A fix task after the playtest:
 
 ```markdown
 ## task-10-fix1 (now; lead, 2026-11-11 10:00 UTC): the review's changes to task-10
@@ -979,7 +982,7 @@ Then run the server and the client together:
 
 Open the preview URL on a machine with a GPU, play a full match against the bots, check the leaderboard and
 the tactician's radio calls. Then compare the real-GPU look with the champion frames. Tone mapping and shadow filtering can differ
-slightly from SwiftShader; large differences become a follow-up task.
+slightly from SwiftShader; large differences become a new task.
 
 ---
 
