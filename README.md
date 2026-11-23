@@ -128,6 +128,12 @@ At the start of every session, and between tasks, the agent:
   and pass with it. Every claim about the code cites file:line.
 - **Host-only verification:** runs only what BRIEF.md allows on this machine. Anything else (hardware,
   external services, benchmarks) is marked **unchecked** for the lead to run.
+- **Decisions without asking:** the lead reads the files, not the session. The agent never asks a question in
+  the session and never waits there for an answer, even when a skill or command it runs says to. Approval of
+  proposed tasks still happens in TASKS.md. When a task leaves a choice open, the agent takes the option that is
+  smallest and easiest to undo, within the task's text and the guardrails. It lists each such choice and its
+  alternatives under `## Decisions` in the task's report. A choice it can't make safely becomes a `BLOCKED` line
+  that states the question, and the agent moves on.
 - **Commits:** made as the author configured in `repo/`, with no AI or tool attribution.
 
 ### 4. The agent delivers

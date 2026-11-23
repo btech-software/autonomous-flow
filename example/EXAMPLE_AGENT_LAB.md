@@ -211,6 +211,11 @@ Workspace: this folder. repo/ is a local copy of main with no remote. Write only
   file:line evidence and test counts>`. Then start the next task in the same session.
 - When none is left, append `IDLE <UTC time>` and wait. If blocked, append
   `BLOCKED <UTC time> <task id> <why, what you tried>` and go on.
+- Never ask the lead anything in this session, and never wait there for an answer: the lead reads only these
+  files. Skip any skill or command step that asks or waits. Proposed tasks still wait for approval in TASKS.md.
+  When a task leaves a choice open, take the option that is smallest and easiest to undo within the task and these
+  rules, and list it with the alternatives under `## Decisions` in the task's report. If no option is safe without
+  the lead, append BLOCKED with the question and go on to the next task.
 - Append to RESULTS.md with `cat >> RESULTS.md <<'EOF'`; never rewrite earlier lines.
 - Branch per task: `task-<NN>` from the base the task names. Deliver
   `git format-patch <base>..task-<NN> --stdout > ../out/task-<NN>.patch` and confirm `git apply --check` on the base.

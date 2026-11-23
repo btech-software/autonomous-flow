@@ -7,6 +7,7 @@ The prompts are short because the files carry the state. Replace task IDs and br
 > Read BRIEF.md, GOAL.md, TASKS.md and RESULTS.md in this folder. Plan any GOAL.md section that has no PLANNED
 > line, under BRIEF.md. Then work the first approved task with no RESULT or BLOCKED line, and continue through the
 > queue without stopping. While tasks wait for my approval, poll as when idle.
+> Never stop to ask me in this session; decide or log BLOCKED as BRIEF.md says.
 
 ## Resume (fresh session after a crash or a full context)
 
